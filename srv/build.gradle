@@ -1,0 +1,61 @@
+plugins {
+  id 'java'
+  id 'org.xtext.xtend' version '1.0.19'
+}
+
+group 'pt.ua.ieeta'
+version '0.1.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+defaultTasks 'jar'
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+sourceSets {
+  main.java.srcDirs= ['src']
+}
+
+dependencies {
+  compile 'ch.qos.logback:logback-classic:1.2.+' // 1.2.3
+  compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
+  //compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.+' //2.15.0
+  
+  compile 'info.picocli:picocli:1.+' // 1.0.1
+  compile 'dcm4che:dcm4che-imageio:2.+' // 2.0.29
+  compile 'dcm4che:dcm4che-net:2.+' // 2.0.29
+
+  //compile 'com.google.code.gson:gson:2.+'
+  
+  //compile ('io.javalin:javalin:2.+') { //  2.3.0
+  //  exclude group: 'org.eclipse.jetty.websocket'
+  //}
+
+  compile 'org.neo4j:neo4j-kernel:3.4.+' // 3.4.8
+  compile ('org.neo4j:neo4j-cypher:3.4.+') { // 3.4.8
+    exclude group: 'org.neo4j', module: 'neo4j-cypher-compiler-2.3'
+    exclude group: 'org.scala-lang'
+    exclude group: 'org.scala-lang.modules'
+    exclude group: 'org.scalatest'
+    exclude group: 'org.scalacheck'
+  }
+}
+
+jar {
+  manifest {
+    attributes 'Implementation-Title': project.name,
+      'Implementation-Version': version, 
+      'Built-By': 'micaelpedrosa@gmail.com',
+      'Main-Class': 'Server',
+      'Class-Path': configurations.compile.collect { 'deps/' + it.getName() }.join(' ')
+  }
+}
+
+task deps(type: Copy) {
+  into "$buildDir/libs/deps"
+  from configurations.runtime
+}
