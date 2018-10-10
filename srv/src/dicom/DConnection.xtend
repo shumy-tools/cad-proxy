@@ -59,7 +59,7 @@ class DConnection {
     return rsp.next
   }
   
-  def List<DResult> find(DQuery queryObj, DField ...loadFields) {
+  def List<DResult> find(DQuery queryObj, DField ...retrieveFields) {
     if (ass === null)
       throw new RuntimeException("Connection association is down for " + aet)
     
@@ -67,7 +67,7 @@ class DConnection {
     queryObj.copyTo(keys)
     
     //set the request fields from server
-    val toLoad = if (loadFields.empty) queryObj.allFields else loadFields.toList
+    val toLoad = if (retrieveFields.empty) queryObj.allFields else retrieveFields.toList
     for(f: toLoad)
       if(!keys.contains(f.tag))
         keys.putNull(f.tag, f.vr)
@@ -76,10 +76,8 @@ class DConnection {
     
     val result = new ArrayList<DicomObject>
     while (rsp.next) {
-      if (CommandUtils.isPending(rsp.command)) {
-        //println(rsp)
+      if (CommandUtils.isPending(rsp.command))
         result.add(rsp.dataset)
-      }
     }
     
     return result.map[ new DResult(it) ]

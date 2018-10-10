@@ -12,7 +12,7 @@ class Server {
     val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
     
     val query = new DStudy()
-    val result = con.find(query, DStudy.ALL)
+    val result = con.find(query, DStudy.UID)
     
     println("RESULTS: " + result.length)
     result.forEach[
