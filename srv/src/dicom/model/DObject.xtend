@@ -5,7 +5,7 @@ import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
 @FinalFieldsConstructor
 abstract class DObject {
-  protected val DicomObject obj
+  public val DicomObject obj
   
   def <T> T get(DField field) {
     val value = switch (field.type) {

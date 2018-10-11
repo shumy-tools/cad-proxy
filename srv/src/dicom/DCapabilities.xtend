@@ -5,7 +5,10 @@ import org.dcm4che2.net.ExtQueryTransferCapability
 import org.dcm4che2.net.TransferCapability
 
 class DCapabilities {
-  public static val STORE_CUIDS = #[UID.MRImageStorage]
+  public static val STORE_CUIDS = #[
+    UID.VLPhotographicImageStorage,
+    UID.MRImageStorage
+  ]
   
   static val nativeLeTs = #[UID.ExplicitVRLittleEndian, UID.ImplicitVRLittleEndian]
   

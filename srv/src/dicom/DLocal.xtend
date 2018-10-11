@@ -1,11 +1,12 @@
 package dicom
 
+import dicom.model.DResult
+import java.util.ArrayList
 import org.dcm4che2.net.Device
 import org.dcm4che2.net.NetworkApplicationEntity
 import org.dcm4che2.net.NetworkConnection
 import org.dcm4che2.net.NewThreadExecutor
 import org.slf4j.LoggerFactory
-import java.util.ArrayList
 
 class DLocal {
   static val log = LoggerFactory.getLogger(DLocal)
@@ -17,15 +18,18 @@ class DLocal {
   val dev = new Device()
   
   val conns = new ArrayList<DConnection>
+  package val DStorage store
   
-  new(String localAet, Integer localPort) { this(localAet, "localhost", localPort) }
-  new(String localAet, String localHost, Integer localPort) {
+  new(String localAet, Integer localPort, (DResult) => void onStore) {
+    this(localAet, "localhost", localPort, onStore)
+  }
+  
+  new(String localAet, String localHost, Integer localPort, (DResult) => void onStore) {
     this.aet = localAet
-    
-    val storePath = "./dcm-store"
+    store = new DStorage(onStore)
     
     con => [
-      hostname = localHost // "192.168.21.250"
+      hostname = localHost
       port = localPort
     ]
     
@@ -35,7 +39,7 @@ class DLocal {
       associationInitiator = true
       associationAcceptor = true
       transferCapability = DCapabilities.TCS
-      register = new DStorage(storePath)
+      register = store
     ]
     
     dev => [
