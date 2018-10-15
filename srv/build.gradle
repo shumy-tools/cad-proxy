@@ -28,6 +28,7 @@ dependencies {
   compile 'info.picocli:picocli:1.+' // 1.0.1
   compile 'dcm4che:dcm4che-imageio:2.+' // 2.0.29
   compile 'dcm4che:dcm4che-net:2.+' // 2.0.29
+  compile 'org.neo4j:neo4j:3.4.+' // 3.4.9
 
   //compile 'com.google.code.gson:gson:2.+'
   
@@ -35,14 +36,8 @@ dependencies {
   //  exclude group: 'org.eclipse.jetty.websocket'
   //}
 
-  compile 'org.neo4j:neo4j-kernel:3.4.+' // 3.4.8
-  compile ('org.neo4j:neo4j-cypher:3.4.+') { // 3.4.8
-    exclude group: 'org.neo4j', module: 'neo4j-cypher-compiler-2.3'
-    exclude group: 'org.scala-lang'
-    exclude group: 'org.scala-lang.modules'
-    exclude group: 'org.scalatest'
-    exclude group: 'org.scalacheck'
-  }
+
+  
 }
 
 jar {

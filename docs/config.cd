@@ -1,0 +1,38 @@
+@startuml
+scale 1.2
+
+hide empty methods
+hide circle
+
+skinparam roundcorner 15
+skinparam shadowing false
+
+skinparam package {
+	BackgroundColor White
+	ArrowColor MediumBlue
+	BorderColor MediumBlue
+  FontStyle plain
+}
+
+skinparam class {
+	BackgroundColor White
+	ArrowColor MediumBlue
+	BorderColor MediumBlue
+  FontStyle bold
+}
+
+
+class Keys {
+  active: bool
+  group: str
+  key: str
+  value: str
+}
+
+/'filtering out some equipments that burn patient name on pixel data!'/
+class ExclusionFilter {
+  active: bool
+  name: str
+  filter: str
+}
+@enduml

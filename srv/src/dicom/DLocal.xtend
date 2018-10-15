@@ -18,7 +18,6 @@ class DLocal {
   val dev = new Device()
   
   val conns = new ArrayList<DConnection>
-  package val DStorage store
   
   new(String localAet, Integer localPort, (DResult) => void onStore) {
     this(localAet, "localhost", localPort, onStore)
@@ -26,7 +25,6 @@ class DLocal {
   
   new(String localAet, String localHost, Integer localPort, (DResult) => void onStore) {
     this.aet = localAet
-    store = new DStorage(onStore)
     
     con => [
       hostname = localHost
@@ -39,7 +37,7 @@ class DLocal {
       associationInitiator = true
       associationAcceptor = true
       transferCapability = DCapabilities.TCS
-      register = store
+      register = new DStorage(onStore)
     ]
     
     dev => [

@@ -1,0 +1,126 @@
+@startuml
+scale 1.2
+
+hide empty methods
+hide circle
+
+skinparam roundcorner 15
+skinparam shadowing false
+
+skinparam package {
+	BackgroundColor White
+	ArrowColor MediumBlue
+	BorderColor MediumBlue
+  FontStyle plain
+}
+
+skinparam class {
+	BackgroundColor White
+	ArrowColor MediumBlue
+	BorderColor MediumBlue
+  FontStyle bold
+}
+
+skinparam note {
+	BackgroundColor White
+	ArrowColor MediumBlue
+	BorderColor MediumBlue
+  FontSize 10
+}
+
+
+class Source {
+  active: bool
+  a-time: dt
+  ..
+  /'pull time interval in hours and number of pulls behind confirming completness'/
+  pull-interval: int
+  pulls-behind: int
+  ..
+  ip: str
+  port: int
+  aet: str
+}
+
+class Pull {
+  started: dt
+  type: enum
+  ..
+  status: enum
+  s-time: int
+  error?: str
+}
+note bottom
+  type: FIND, PULL
+  status: START, FIND, PULL, END, ERROR
+end note
+
+class Subject {
+  active: bool
+  a-time: dt
+  ..
+  udi: str
+  pid: str
+
+  /'M,F,U - Male, Female, Undefined'/
+  sex?: enum
+  birthday?: date
+}
+
+class Study {
+  uid: str
+  date: date
+}
+
+class Series {
+  uid: str
+  seq: int
+  time: dt
+  modality: str
+  ..
+  /'file type extension'/
+  file-type: str
+  in-cache: bool
+}
+
+class Item {
+  uid: str
+  seq: int
+  time: dt
+}
+
+class Push {
+  qid: str
+  started: dt
+  ..
+  status: enum
+  s-time: int
+  error?: str
+}
+note top
+  status: START, CREATE, ZIP, TRANSMIT, END, ERROR
+end note
+
+class Target {
+  active: bool
+  a-time: dt
+  ..
+  udi: str
+  name: str
+  modalities: [str]
+}
+
+
+Pull -left-> Source:from
+Pull o-right- Study:these
+
+Subject --> Source:from
+
+Subject *-- Study:has
+Study *-right- Series:has
+Series *-- Item:has
+
+Push o-- Series:these
+Push -right-> Target:to
+
+@enduml

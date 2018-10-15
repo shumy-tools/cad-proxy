@@ -1,0 +1,18 @@
+{
+  "qid": "<queue-id>",
+  "subject": {
+    "udi": "<unique-digital-identity>",
+    "sex": "M",
+    "birthday": "1981-01-28"
+  },
+  "series": {
+    "s1": {
+      "mod": "XC",
+      "type": "jpeg",
+      "items": {
+        "i1": { "crc": "234098", "dt": "2015-04-14T11:07:36.639Z" },
+        "i2": { "crc": "133296", "dt": "2018-01-16T10:07:36.639Z" }
+      }
+    }
+  }
+}
