@@ -31,6 +31,7 @@ class DQuery extends DObject {
       case RetrieveLevel.PATIENT: DPatient.DEFAULT
       case RetrieveLevel.STUDY: DStudy.DEFAULT
       case RetrieveLevel.SERIES: DSeries.DEFAULT
+      case RetrieveLevel.IMAGE: DImage.DEFAULT
     }
   }
 }

@@ -4,6 +4,8 @@ import dicom.model.DField
 import dicom.model.DQuery
 import dicom.model.DResult
 import dicom.model.DStudy
+import dicom.model.DSeries
+import dicom.model.DPatient
 import java.util.ArrayList
 import java.util.List
 import org.dcm4che2.data.BasicDicomObject
@@ -18,10 +20,13 @@ import org.dcm4che2.net.NetworkConnection
 import org.dcm4che2.net.NewThreadExecutor
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 
 class DConnection {
   static val log = LoggerFactory.getLogger(DConnection)
   static val tsuid = UID.ImplicitVRLittleEndian
+  static val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
   
   public val String aet
   
@@ -63,6 +68,16 @@ class DConnection {
     val rsp = ass.cecho(UID.StudyRootQueryRetrieveInformationModelFIND)
     
     return rsp.next
+  }
+  
+  def List<DResult> findDayStudies(LocalDate date) {
+    val day = date.format(formatter)
+    find(new DQuery(DStudy.RL) => [set(DStudy.DATE, day)], DPatient.ID, DStudy.UID, DStudy.DATE)
+  }
+  
+  def List<DResult> findDaySeries(LocalDate date) {
+    val day = date.format(formatter)
+    find(new DQuery(DSeries.RL) => [set(DStudy.DATE, day)], DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME)
   }
   
   def List<DResult> find(DQuery query, DField ...retrieveFields) {

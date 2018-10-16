@@ -35,11 +35,10 @@ class Source {
   ..
   /'pull time interval in hours and number of pulls behind confirming completness'/
   pull-interval: int
-  pulls-behind: int
   ..
-  ip: str
-  port: int
   aet: str
+  host: str
+  port: int
 }
 
 class Pull {
@@ -52,7 +51,7 @@ class Pull {
 }
 note bottom
   type: FIND, PULL
-  status: START, FIND, PULL, END, ERROR
+  status: START, END, ERROR
 end note
 
 class Subject {
@@ -78,8 +77,6 @@ class Series {
   time: dt
   modality: str
   ..
-  /'file type extension'/
-  file-type: str
   in-cache: bool
 }
 
@@ -90,7 +87,6 @@ class Item {
 }
 
 class Push {
-  qid: str
   started: dt
   ..
   status: enum
@@ -112,15 +108,15 @@ class Target {
 
 
 Pull -left-> Source:from
-Pull o-right- Study:these
+Pull o-right-> Study:these
 
 Subject --> Source:from
 
-Subject *-- Study:has
-Study *-right- Series:has
-Series *-- Item:has
+Subject *--> Study:has
+Study *-right-> Series:has
+Series *--> Item:has
 
-Push o-- Series:these
+Push o--> Series:these
 Push -right-> Target:to
 
 @enduml

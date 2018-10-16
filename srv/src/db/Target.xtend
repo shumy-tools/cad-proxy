@@ -10,36 +10,38 @@ class Target {
   val NeoDB db
   public static val NODE = Target.simpleName
   
-  public static val ACTIVE = "active"
-  public static val A_TIME = "aTime"
+  public static val ACTIVE            = "active"
+  public static val A_TIME            = "aTime"
   
-  public static val UDI = "udi"
-  public static val NAME = "name"
-  public static val MODALITIES = "modalities"
+  public static val UDI               = "udi"
+  public static val NAME              = "name"
+  public static val MODALITIES        = "modalities"
   
   def Long create(String udi, String name, Set<String> modalities) {
-    val map = #{ UDI -> udi, NAME -> name, MODALITIES -> modalities }
+    val map = #{ UDI -> udi, NAME -> name, MODALITIES -> modalities, A_TIME -> LocalDateTime.now }
     val res = db.cypher('''
-      MERGE (t:«NODE» {«UDI»: $«UDI»})
-      ON CREATE SET
-        t.«ACTIVE» = true,
-        t.«A_TIME» = "«LocalDateTime.now»",
-        t.«UDI» = $«UDI»,
-        t.«NAME» = $«NAME»,
-        t.«MODALITIES» = $«MODALITIES»
-      RETURN id(t) as id
+      MERGE (n:«NODE» {«UDI»: $«UDI»})
+        ON CREATE SET
+          n.«ACTIVE» = true,
+          
+          n.«A_TIME» = $«A_TIME»,
+          n.«UDI» = $«UDI»,
+          n.«NAME» = $«NAME»,
+          n.«MODALITIES» = $«MODALITIES»
+      RETURN id(n) as id
     ''', map)
     
     res.head.get("id") as Long
   }
   
   def getAll() {
-    db.cypher('''MATCH (t:«NODE») RETURN
-      t.«ACTIVE» as «ACTIVE»,
-      t.«A_TIME» as «A_TIME»,
-      t.«UDI» as «UDI»,
-      t.«NAME» as «NAME»,
-      t.«MODALITIES» as «MODALITIES»
+    db.cypher('''MATCH (n:«NODE») RETURN
+      id(n) as id,
+      n.«ACTIVE» as «ACTIVE»,
+      n.«A_TIME» as «A_TIME»,
+      n.«UDI» as «UDI»,
+      n.«NAME» as «NAME»,
+      n.«MODALITIES» as «MODALITIES»
     ''')
   }
   
