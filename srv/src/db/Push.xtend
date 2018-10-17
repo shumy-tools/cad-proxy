@@ -19,9 +19,9 @@ class Push {
   public static val THESE               = "THESE"
   
   def Long create(Long targetID, String type, String status) {
-    val map = #{ "tid" -> targetID, STARTED -> LocalDateTime.now, STATUS -> status, S_TIME -> LocalDateTime.now }
+    val map = #{ STARTED -> LocalDateTime.now, STATUS -> status, S_TIME -> LocalDateTime.now }
     val res = db.cypher('''
-      MATCH (t:«Target.NODE») WHERE id(s) = $tid
+      MATCH (t:«Target.NODE») WHERE id(s) = «targetID»
       MERGE (n:«NODE»)
         ON CREATE SET
           n.«STARTED» = $«STARTED»,
@@ -36,9 +36,9 @@ class Push {
   }
   
   def Long linkSeries(Long pushID, Set<Long> seriesIDs) {
-    val map = #{ "pid" -> pushID, "sids" -> seriesIDs }
+    val map = #{ "sids" -> seriesIDs }
     val res = db.cypher('''
-      MATCH (n:«NODE») WHERE id(n) = $pid
+      MATCH (n:«NODE») WHERE id(n) = «pushID»
       MATCH (s:«Series.NODE») WHERE id(s) IN $sids
       MERGE (n)-[l:«THESE»]->(s)
       RETURN count(l) as size

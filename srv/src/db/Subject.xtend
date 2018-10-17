@@ -21,9 +21,9 @@ class Subject {
   public static val FROM              = "FROM"
   
   def Long create(Long sourceID, String udi, String pid, String sex, LocalDate birthday) {
-    val map = #{ "sid" -> sourceID, UDI -> udi, PID -> pid, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
+    val map = #{ UDI -> udi, PID -> pid, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
     val res = db.cypher('''
-      MATCH (s:«Source.NODE») WHERE id(s) = $sid
+      MATCH (s:«Source.NODE») WHERE id(s) = «sourceID»
       MERGE (n:«NODE» {«UDI»: $«UDI»})
         ON CREATE SET
           n.«ACTIVE» = true,
@@ -44,10 +44,10 @@ class Subject {
   }
   
   def activeFrom(Long sourceID, String patientID) {
-    val map = #{ "sid" -> sourceID, "pid" -> patientID }
+    val map = #{ "pid" -> patientID }
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:«FROM»]->(s:«Source.NODE»)
-      WHERE n.«ACTIVE» = true AND n.«PID» = $pid AND id(s) = $sid
+      WHERE n.«ACTIVE» = true AND n.«PID» = $pid AND id(s) = «sourceID»
       RETURN id(n) as id
     ''', map)
     

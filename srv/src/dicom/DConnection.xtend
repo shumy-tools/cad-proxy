@@ -72,15 +72,19 @@ class DConnection {
   
   def List<DResult> findDayStudies(LocalDate date) {
     val day = date.format(formatter)
-    find(new DQuery(DStudy.RL) => [set(DStudy.DATE, day)], DPatient.ID, DStudy.UID, DStudy.DATE)
+    find(new DQuery(DStudy.RL) => [set(DStudy.DATE, day)],
+      DPatient.ID, DStudy.UID, DStudy.DATE
+    )
   }
   
   def List<DResult> findDaySeries(LocalDate date) {
     val day = date.format(formatter)
-    find(new DQuery(DSeries.RL) => [set(DStudy.DATE, day)], DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME)
+    find(new DQuery(DSeries.RL) => [set(DStudy.DATE, day)],
+      DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME
+    )
   }
   
-  def List<DResult> find(DQuery query, DField ...retrieveFields) {
+  def List<DResult> find(DQuery query, DField<?> ...retrieveFields) {
     prepareLink
     
     val keys = new BasicDicomObject
@@ -107,11 +111,26 @@ class DConnection {
     pull(suid, null)
   }
   
-  def void pull(String suid, (Pull) => void onPull) {
+  def void pull(String studyUID, String seriesUID, (DPull) => void onPull) {
     prepareLink
     
-    val query = new DQuery(DStudy.RL) => [ set(DStudy.UID, suid) ]
-    val mh = new MoveHandler(suid, onPull)
+    val query = new DQuery(DSeries.RL) => [
+      set(DStudy.UID, studyUID)
+      set(DSeries.UID, seriesUID)
+    ]
+    
+    val mh = new MoveHandler(seriesUID, onPull)
+    ass.cmove(UID.StudyRootQueryRetrieveInformationModelMOVE, 0, query.obj, tsuid, local.aet, mh)
+  }
+  
+  def void pull(String studyUID, (DPull) => void onPull) {
+    prepareLink
+    
+    val query = new DQuery(DStudy.RL) => [
+      set(DStudy.UID, studyUID)
+    ]
+    
+    val mh = new MoveHandler(studyUID, onPull)
     ass.cmove(UID.StudyRootQueryRetrieveInformationModelMOVE, 0, query.obj, tsuid, local.aet, mh)
   }
   
@@ -125,7 +144,7 @@ class DConnection {
 }
 
 @FinalFieldsConstructor
-class Pull {
+class DPull {
   enum Status { OK, COMPLETED, ERROR }
   
   public val Status status
@@ -136,8 +155,8 @@ class Pull {
 class MoveHandler extends DimseRSPHandler {
   static val log = LoggerFactory.getLogger(MoveHandler)
   
-  val String suid
-  val (Pull) => void onPull
+  val String uid
+  val (DPull) => void onPull
   
   override onDimseRSP(Association ass, DicomObject cmd, DicomObject data) {
     val status = cmd.getInt(Tag.Status)
@@ -146,19 +165,19 @@ class MoveHandler extends DimseRSPHandler {
       case 0: {
         val remaining = cmd.getInt(Tag.NumberOfRemainingSuboperations)
         if(remaining != 0) {
-          log.debug("Move on Study {}: {}", suid, remaining)
-          onPull?.apply(new Pull(Pull.Status.OK, 0))
+          log.debug("Move on UID {}: {}", uid, remaining)
+          onPull.apply(new DPull(DPull.Status.OK, 0))
         } else {
-          log.debug("Move completed on Study {}", suid)
-          onPull?.apply(new Pull(Pull.Status.COMPLETED, 0))
+          log.debug("Move completed on UID {}", uid)
+          onPull.apply(new DPull(DPull.Status.COMPLETED, 0))
         }
       }
       
-      case 65280: log.debug("Move pending on Study {}", suid)
+      case 65280: log.debug("Move pending on UID {}", uid)
       
       default: {
-        log.error("Move error on Study {}", suid)
-        onPull?.apply(new Pull(Pull.Status.ERROR, status))
+        log.error("Move error on UID {}", uid)
+        onPull.apply(new DPull(DPull.Status.ERROR, status))
       }
     }
   }

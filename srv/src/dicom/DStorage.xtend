@@ -30,6 +30,6 @@ class DStorage extends StorageService {
       val res = new DResult(obj)
       onStore.apply(res)
     } else
-      log.warn("Not a valid supported CUID: " + cuid)
+      log.warn("Unsupported CUID: " + cuid)
   }
 }

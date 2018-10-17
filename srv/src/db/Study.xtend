@@ -14,9 +14,9 @@ class Study {
   public static val HAS               = "HAS"
   
   def Long create(Long subjectID, String uid, LocalDate date) {
-    val map = #{ "sid" -> subjectID, UID -> uid, DATE -> date }
+    val map = #{ UID -> uid, DATE -> date }
     val res = db.cypher('''
-      MATCH (s:«Subject.NODE») WHERE id(s) = $sid
+      MATCH (s:«Subject.NODE») WHERE id(s) = «subjectID»
       MERGE (n:«NODE» {«UID»: $«UID»})
         ON CREATE SET
           n.«UID» = $«UID»,

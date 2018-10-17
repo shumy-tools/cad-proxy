@@ -21,12 +21,12 @@ class DQuery extends DObject {
     obj.copyTo(to)
   }
   
-  def DQuery set(DField field, String value) {
+  def DQuery set(DField<?> field, String value) {
     obj.putString(field.tag, field.vr, value.toString)
     return this
   }
   
-  def List<DField> defaults() {
+  def List<? extends DField<?>> defaults() {
     switch rl {
       case RetrieveLevel.PATIENT: DPatient.DEFAULT
       case RetrieveLevel.STUDY: DStudy.DEFAULT

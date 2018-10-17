@@ -47,6 +47,25 @@ class Source {
     ''')
   }
   
+  def byId(Long id) {
+    val res = db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «id»
+      RETURN
+        id(n) as id,
+        n.«ACTIVE» as «ACTIVE»,
+        n.«A_TIME» as «A_TIME»,
+        n.«PULL_INTERVAL» as «PULL_INTERVAL»,
+        n.«AET» as «AET»,
+        n.«HOST» as «HOST»,
+        n.«PORT» as «PORT»
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find source by id: «id»''')
+    
+    res.head
+  }
+  
   def pullThrottle() {
     val map = #{ "now" -> LocalDateTime.now}
     db.cypher('''

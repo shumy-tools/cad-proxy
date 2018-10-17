@@ -14,8 +14,10 @@ class Store {
   public val Pull     PULL
   public val Push     PUSH
   
+  static val dbPath = "./data/db"
+  
   static def Store setup(boolean isProd) {
-    val db = if (isProd) new NeoDB("data/db") else new NeoDB("test/db")
+    val db = if (isProd) new NeoDB(dbPath) else new NeoDB("./test")
     return new Store(db)
   }
   
