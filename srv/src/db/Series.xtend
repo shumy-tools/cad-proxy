@@ -12,7 +12,7 @@ class Series {
   public static val MODALITY          = "modality"
   
   public static val ELIGIBLE          = "eligible"
-  public static val COMPLETED         = "completed"
+  public static val COMPLETE          = "complete"
   public static val SIZE              = "size"
   
   def Long create(Long studyID, String uid, Integer seq, String modality) {
@@ -22,7 +22,7 @@ class Series {
       MERGE (s)-[:HAS]->(n:«NODE» {«UID»: $«UID»})
         ON CREATE SET
           n.«ELIGIBLE» = true,
-          n.«COMPLETED» = false,
+          n.«COMPLETE» = false,
           n.«SIZE» = 0,
           
           n.«UID» = $«UID»,
@@ -60,7 +60,7 @@ class Series {
   def void completed(Long seriesID) {
     db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «seriesID»
-      SET n.«COMPLETED» = true, n.«SIZE» = size([(n)-[:HAS]->(i:«Item.NODE») | i])
+      SET n.«COMPLETE» = true, n.«SIZE» = size([(n)-[:HAS]->(i:«Item.NODE») | i])
     ''')
   }
 }

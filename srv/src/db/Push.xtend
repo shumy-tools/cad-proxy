@@ -74,7 +74,7 @@ class Push {
         .«Series.SEQ»,
         .«Series.MODALITY»,
         .«Series.ELIGIBLE»,
-        .«Series.COMPLETED»,
+        .«Series.COMPLETE»,
         .«Series.SIZE»
       }] as series
     ''')

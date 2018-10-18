@@ -77,7 +77,8 @@ class Series {
   modality: str
   ..
   eligible: bool
-  completed: bool
+  complete: bool
+  size: int
 }
 
 class Item {
