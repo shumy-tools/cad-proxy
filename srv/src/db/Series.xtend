@@ -18,7 +18,7 @@ class Series {
     val map = #{ UID -> uid, SEQ -> seq, MODALITY -> modality }
     val res = db.cypher('''
       MATCH (s:«Study.NODE») WHERE id(s) = «studyID»
-      MERGE (n:«NODE» {«UID»: $«UID»})
+      MERGE (s)-[:HAS]->(n:«NODE» {«UID»: $«UID»})
         ON CREATE SET
           n.«ELIGIBLE» = true,
           n.«COMPLETED» = false,
@@ -26,7 +26,6 @@ class Series {
           n.«UID» = $«UID»,
           n.«SEQ» = $«SEQ»,
           n.«MODALITY» = $«MODALITY»
-      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     
@@ -34,6 +33,26 @@ class Series {
       throw new RuntimeException('''Unable to create series. Probable cause, no valid studyID=«studyID»''')
     
     res.head.get("id") as Long
+  }
+  
+  def Long exist(String seriesUID) {
+    val map = #{ "suid" -> seriesUID }
+    val res = db.cypher('''
+      MATCH (n:«NODE» {«UID»: $suid})
+      RETURN id(n) as id
+    ''', map)
+    
+    if (res.empty)
+      return null
+    
+    return res.head.get("id") as Long
+  }
+  
+  def void eligible(Long seriesID, boolean isEligible) {
+    db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «seriesID»
+      SET n.«ELIGIBLE» = «isEligible»
+    ''')
   }
   
   def void completed(Long seriesID, boolean isCompleted) {

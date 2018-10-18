@@ -22,7 +22,7 @@ class DStorage extends StorageService {
     log.debug("Store {}", rq)
     val iuid = rq.getString(Tag.AffectedSOPInstanceUID)
     val cuid = rq.getString(Tag.AffectedSOPClassUID)
-        
+    
     val obj = dataStream.readDataset
     obj.initFileMetaInformation(cuid, iuid, tsuid)
     

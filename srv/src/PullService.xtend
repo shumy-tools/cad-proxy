@@ -17,30 +17,8 @@ import java.util.Map
 import java.util.Set
 import org.dcm4che2.io.DicomOutputStream
 import org.slf4j.LoggerFactory
-
-class PullRequests {
-  // number of in progress pulls for a seriesUID <seriesUID, pullRequests>
-  // uses a refCount mechanism to manage requests
-  val inProgress = new HashMap<String, Integer> 
-  
-  def synchronized void add(String seriesUID) {
-    val count = inProgress.get(seriesUID)?:0
-    inProgress.put(seriesUID, count + 1)
-  }
-  
-  def synchronized void remove(String seriesUID) {
-    val count = inProgress.get(seriesUID)?:0
-    if (count > 0)
-      inProgress.put(seriesUID, count - 1)
-    else
-      inProgress.remove(seriesUID)
-  }
-  
-  def synchronized boolean contains(String seriesUID) {
-    val count = inProgress.get(seriesUID)?:0
-    return count !== 0
-  }
-}
+import org.dcm4che2.data.Tag
+import org.dcm4che2.data.VR
 
 class PullService {
   static val logger = LoggerFactory.getLogger(PullService)
@@ -48,22 +26,54 @@ class PullService {
   val Store store
   val DLocal local
   
-  val requests = new PullRequests
+  //TODO: move this to a DB config. Load on PullService instantiation.
   val cachePath = "./data/cache"
+  
+  //TODO: move this to a DB config. Load on PullService instantiation.
+  val whiteList = #{
+    Tag.SOPClassUID,
+    
+    Tag.PatientOrientation,
+    
+    Tag.StudyDate,
+    Tag.StudyTime,
+    
+    Tag.SeriesNumber,
+    Tag.Modality,
+    
+    Tag.InstanceNumber,
+    Tag.AcquisitionNumber,
+    Tag.ContentDate,
+    Tag.ContentTime,
+    Tag.Laterality,
+    
+    Tag.PixelData,
+    Tag.Columns,
+    Tag.Rows,
+    Tag.BitsAllocated,
+    Tag.BitsStored,
+    Tag.HighBit,
+    Tag.PixelRepresentation,
+    Tag.SamplesPerPixel,
+    Tag.PhotometricInterpretation,
+    Tag.PlanarConfiguration
+  }
   
   new(Store store, String localAET, String localIP) {
     this.store = store
     this.local = new DLocal(localAET, localIP, 1104)[
       val seriesUID = get(DSeries.UID)
-      if(!isEligible) {
-        logger.debug("On-Store filter, non eligible series: {}", seriesUID)
+      
+      val seriesID = store.SERIES.exist(seriesUID)
+      if (seriesID === null) {
+        // if this is executed, it's probably a bug on the PACS server!
+        store.error(PullService, "Trying to store a non requested seriesUID: " + seriesUID)
         return
       }
       
-      if (!requests.contains(seriesUID)) {
-        // if this is executed, it's probably a bug from the PACS server!
-        logger.error("On-Store trying to store a non requested seriesUID: {}", seriesUID)
-        //TODO: set the series status/error ?
+      if(!isEligible) {
+        logger.debug("On-Store filter, non eligible series: {}", seriesUID)
+        store.SERIES.eligible(seriesID, false)
         return
       }
       
@@ -71,21 +81,24 @@ class PullService {
       val imageSeq = get(DImage.NUMBER)
       val imageDT = LocalDateTime.of(get(DImage.CONTENT_DATE), get(DImage.CONTENT_TIME))
       
-      logger.info("Cache file: (series={}, image={})", seriesUID, imageUID)
-      
-      val dir = Paths.get(cachePath + "/" + seriesUID)
-      Files.createDirectories(dir)
-      
-      val file = dir.resolve(imageUID + ".dcm").toFile
-      file.deleteOnExit
-      file.createNewFile
-      
-      //TODO: dicom should be pseudonymous ?
-      val dos = new DicomOutputStream(file)
-      dos.writeDicomFile(obj)
-      dos.close
-      
-      store.ITEM.linkCreate(seriesUID, imageUID, imageSeq, imageDT)
+      try {
+        logger.info("Cache file: (series={}, image={})", seriesUID, imageUID)
+        val dir = Paths.get(cachePath + "/s" + seriesID)
+        Files.createDirectories(dir)
+        
+        val file = dir.resolve(imageSeq + "i.dcm").toFile
+        file.delete
+        file.createNewFile
+        
+        // dicom is anonymized before cache storage
+        val dos = new DicomOutputStream(file)
+        dos.writeDicomFile(anonymize)
+        dos.close
+        
+        store.ITEM.create(seriesID, imageUID, imageSeq, imageDT)
+      } catch (Throwable ex) {
+        store.error(PullService, "Unable to save file for imageUID: " + seriesUID + " -> " + ex.message)
+      }
     ]
   }
   
@@ -176,11 +189,9 @@ class PullService {
           val seriesID = get("id") as Long
           
           // async pull
-          requests.add(seriesUID)
           con.pull(studyUID, seriesUID)[
             if (status === DPull.Status.COMPLETED) {
               println("COMPLETED: " + seriesUID)
-              requests.remove(seriesUID)
               store.SERIES.completed(seriesID, true)
               logger.info("On-Pull completed for series: {}", seriesUID)
             }
@@ -196,6 +207,34 @@ class PullService {
     }
     
     return pullID
+  }
+  
+  private def anonymize(DResult res) {
+    // leave only white listed attributes
+    val view = res.obj.excludePrivate
+    view.datasetIterator.forEach[
+      if (!whiteList.contains(tag))
+        view.remove(tag)
+    ]
+    
+    // always remove these meta info
+    view.fileMetaInfo => [
+      remove(Tag.ImplementationVersionName)
+      remove(Tag.SourceApplicationEntityTitle)
+      remove(Tag.PrivateInformationCreatorUID)
+      remove(Tag.PrivateInformation)
+    ]
+    
+    // reset mandatory attributes
+    view => [
+      putString(Tag.PatientID, VR.LO, "ZZZZZZZZZZZZ")
+      putString(Tag.StudyInstanceUID, VR.UI, "0.0.000.0.0.0000000.0.0000.0.0.0.0000000")
+      putString(Tag.StudyID, VR.SH, "0000")
+      putString(Tag.SeriesInstanceUID, VR.UI, "0.0.000.000000.000.0.0.000000.0000.00000000000000.0")
+      putString(Tag.SOPInstanceUID, VR.UI, "0.0.000.000000.000.0.0.000000.0000.00000000000000.0.0.0.0")
+    ]
+    
+    return view
   }
   
   private def isEligible(DResult result) {

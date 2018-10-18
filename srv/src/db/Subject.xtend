@@ -18,13 +18,11 @@ class Subject {
   public static val SEX               = "sex"
   public static val BIRTHDAY          = "birthday"
   
-  public static val FROM              = "FROM"
-  
   def Long create(Long sourceID, String udi, String pid, String sex, LocalDate birthday) {
     val map = #{ UDI -> udi, PID -> pid, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
     val res = db.cypher('''
       MATCH (s:«Source.NODE») WHERE id(s) = «sourceID»
-      MERGE (n:«NODE» {«UDI»: $«UDI»})
+      MERGE (n:«NODE» {«UDI»: $«UDI»})-[:FROM]->(s)
         ON CREATE SET
           n.«ACTIVE» = true,
           
@@ -33,7 +31,6 @@ class Subject {
           n.«PID» = $«PID»,
           n.«SEX» = $«SEX»,
           n.«BIRTHDAY» = $«BIRTHDAY»
-      MERGE (n)-[:«FROM»]->(s)
       RETURN id(n) as id
     ''', map)
     
@@ -46,7 +43,7 @@ class Subject {
   def activeFrom(Long sourceID, String patientID) {
     val map = #{ "pid" -> patientID }
     val res = db.cypher('''
-      MATCH (n:«NODE»)-[:«FROM»]->(s:«Source.NODE»)
+      MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
       WHERE n.«ACTIVE» = true AND n.«PID» = $pid AND id(s) = «sourceID»
       RETURN id(n) as id
     ''', map)
@@ -55,7 +52,7 @@ class Subject {
     res.head.get("id") as Long
   }
   
-  def getAll() {
+  def all() {
     db.cypher('''MATCH (n:«NODE») RETURN
       id(n) as id,
       n.«ACTIVE» as «ACTIVE»,

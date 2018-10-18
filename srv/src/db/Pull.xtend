@@ -18,9 +18,6 @@ class Pull {
   public static val S_TIME              = "sTime"
   public static val ERROR               = "error"
   
-  public static val FROM                = "FROM"
-  public static val THESE               = "THESE"
-  
   def Long create(Long linkID, Type type) {
     val map = #{ STARTED -> LocalDateTime.now, TYPE -> type.name, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
     
@@ -35,7 +32,7 @@ class Pull {
           n.«TYPE» = $«TYPE»,
           n.«STATUS» = $«STATUS»,
           n.«S_TIME» = $«S_TIME»
-        MERGE (n)-[:«FROM»]->(s)
+        MERGE (n)-[:FROM]->(s)
         RETURN id(n) as id
     ''', map)
     
@@ -66,7 +63,7 @@ class Pull {
     val res = db.cypher('''
       MATCH (n:«NODE»), (s:«Study.NODE»)
         WHERE id(n) = «pullID» AND id(s) IN $sids
-      MERGE (n)-[l:«THESE»]->(s)
+      MERGE (n)-[l:THESE]->(s)
       RETURN count(l) as size
     ''', map)
     
@@ -76,16 +73,17 @@ class Pull {
   def data(Long pullID, Type type) {
     val res = db.cypher('''
       «IF type == Type.FIND»
-        MATCH (l:«Source.NODE»)<-[:«FROM»]-(n:«NODE»)
+        MATCH (l:«Source.NODE»)<-[:FROM]-(n:«NODE»)
         WHERE id(n) = «pullID» AND n.«TYPE» = "«type.name»"
         WITH id(l) as source, "«Source.NODE»" as sType, n
       «ELSE»
-        MATCH (l:«NODE»)-[:«FROM»]->(n:«NODE»)
+        MATCH (l:«NODE»)-[:FROM]->(n:«NODE»)
         WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.FIND.name»"
         WITH id(n) as source, "«NODE»" as sType, n
       «ENDIF»
-      RETURN source, sType, [(n)-[:«THESE»]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
+      RETURN source, sType, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
         subject: p.«Subject.UDI»,
+        id: id(s),
         .«Study.UID»,
         .«Study.DATE»,
         series: [(s)-[:HAS]->(e:«Series.NODE») | e {
@@ -93,12 +91,9 @@ class Pull {
           .«Series.UID»,
           .«Series.SEQ»,
           .«Series.MODALITY»,
+          .«Series.ELIGIBLE»,
           .«Series.COMPLETED»,
-          items: [(e)-[:HAS]->(i:«Item.NODE») | i {
-            .«Item.UID»,
-            .«Item.SEQ»,
-            .«Item.TIME»
-          }]
+          size: size([(e)-[:HAS]->(i:«Item.NODE») | i])
         }]
       }] as studies
     ''')

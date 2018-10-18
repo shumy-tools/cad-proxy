@@ -1,8 +1,12 @@
 package db
 
 import java.util.Map
+import org.slf4j.LoggerFactory
+import java.time.LocalDateTime
 
 class Store {
+  static val logger = LoggerFactory.getLogger("LOGGER")
+  
   val NeoDB db
   
   public val Target   TARGET
@@ -25,8 +29,30 @@ class Store {
     db.cypher(cypher)
   }
   
-    def cypher(String cypher, Map<String, ?> params) {
+  def cypher(String cypher, Map<String, ?> params) {
     db.cypher(cypher, params)
+  }
+  
+  def void error(Class<?> clazz, String msg) {
+    logger.error(msg)
+    val map = #{ "class" -> clazz.name, "msg" -> msg, "stamp" -> LocalDateTime.now }
+    db.cypher('''
+      CREATE (l:Log {
+        type: "ERROR",
+        class: $class,
+        stamp: $stamp,
+        msg: $msg
+      })
+    ''', map)
+  }
+  
+  def logs() {
+    db.cypher('''MATCH (l:Log) RETURN
+      l.type as type,
+      l.class as class,
+      l.stamp as stamp,
+      l.msg as msg
+    ''')
   }
   
   private new(NeoDB db) {
@@ -38,6 +64,8 @@ class Store {
       cypher('''CREATE CONSTRAINT ON (n:«Study.NODE») ASSERT n.«Study.UID» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Series.NODE») ASSERT n.«Series.UID» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Item.NODE») ASSERT n.«Item.UID» IS UNIQUE''')
+      
+      cypher('''CREATE INDEX ON :«Series.NODE»(«Series.MODALITY»)''')
     ]
     
     TARGET = new Target(db)

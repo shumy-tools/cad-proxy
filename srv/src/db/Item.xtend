@@ -12,21 +12,20 @@ class Item {
   public static val SEQ               = "seq"
   public static val TIME              = "time"
   
-  def Long linkCreate(String seriesUID, String uid, Integer seq, LocalDateTime time) {
-    val map = #{ "suid" -> seriesUID, UID -> uid, SEQ -> seq, TIME -> time }
+  def Long create(Long seriesID, String uid, Integer seq, LocalDateTime time) {
+    val map = #{ UID -> uid, SEQ -> seq, TIME -> time }
     val res = db.cypher('''
-      MATCH (s:«Series.NODE» {«Series.UID»: $suid})
-      MERGE (n:«NODE» {«UID»: $«UID»})
+      MATCH (s:«Series.NODE») WHERE id(s) = «seriesID»
+      MERGE (s)-[:HAS]->(n:«NODE» {«UID»: $«UID»})
         ON CREATE SET
           n.«UID» = $«UID»,
           n.«SEQ» = $«SEQ»,
           n.«TIME» = $«TIME»
-      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     
     if (res.empty)
-      throw new RuntimeException('''Unable to link item to series. Probable cause, no valid seriesUID=«seriesUID»''')
+      throw new RuntimeException('''Unable to create series. Probable cause, no valid seriesID==«seriesID»''')
     
     res.head.get("id") as Long
   }

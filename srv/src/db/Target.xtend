@@ -34,7 +34,7 @@ class Target {
     res.head.get("id") as Long
   }
   
-  def getAll() {
+  def all() {
     db.cypher('''MATCH (n:«NODE») RETURN
       id(n) as id,
       n.«ACTIVE» as «ACTIVE»,
@@ -45,12 +45,24 @@ class Target {
     ''')
   }
   
-  def getModalities() {
+  def modalities() {
     val res = db.cypher('''MATCH (t:«NODE») RETURN t.«MODALITIES» as «MODALITIES»''')
     
     val mods = new HashSet<String>
     res.map[get(MODALITIES) as String[]].forEach[mods.addAll(it)]
     
     return mods as Set<String>
+  }
+  
+  def pendingData() {
+    db.cypher('''
+      MATCH (n:«NODE»)<-[:CONSENT]-(p:«Subject.NODE»)-[:HAS]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
+        WHERE p.«Subject.ACTIVE» = true AND n.«ACTIVE» = true
+          AND e.«Series.ELIGIBLE» = true AND e.«Series.COMPLETED» = true AND e.«Series.MODALITY» IN n.«MODALITIES»
+          AND size([(e)-[:HAS]->(i:«Item.NODE») | i]) > 0
+      MATCH (e) WHERE NOT (e)<-[:THESE]-(:«Push.NODE»)-[:TO]->(n) 
+        OR (e)<-[:THESE]-(:«Push.NODE» {status:"«Push.Status.RETRY.name»"})-[:TO]->(n)
+      RETURN id(n) as id, collect(id(e)) as series
+    ''')
   }
 }

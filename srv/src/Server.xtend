@@ -16,7 +16,8 @@ class Server {
   static val log = LoggerFactory.getLogger(Server)
   
   def static void main(String[] args) {
-    testPull
+    //testPull
+    testPendingData
     //testDicom
     
     //1.2.826.0.1.3680043.2.1174.4.1.5.2572560 -> 56f3c197-53f8-4d08-95e1-9c3868b58b90
@@ -46,8 +47,49 @@ class Server {
     ]
   }
   
+  static def void testPendingData() {
+    val store = Store.setup(true)
+    
+    //store.cypher("MATCH (:Subject)-[c:CONSENT]->(:Target) DELETE c")
+    //store.cypher("MERGE (s:Subject)-[:CONSENT]->(t:Target)")
+    //store.cypher("MATCH (s:Subject),(t:Target) CREATE (s)-[:CONSENT]->(t)")
+    //store.cypher("MATCH (s:Subject)-[:CONSENT]->(t:Target) RETURN id(s), id(t)").forEach[println(it)]
+    
+    
+    /*store.cypher('''
+      MATCH (n:Target), (e:Series) WHERE id(n) = 1 AND id(e) = 358
+      CREATE (n)<-[:TO]-(:Push {status:"RETRY"})-[:THESE]->(e)
+    ''')*/
+    
+    //store.cypher("MATCH (n:Target) WHERE n.name IS NULL DETACH DELETE n")
+    
+    println("Targets: ")
+    store.TARGET.all.forEach[
+      print(it + " -> [ ")
+      (get("modalities") as String[]).forEach[
+        print(it + " ")
+      ]
+      println("]")
+    ]
+    
+    // Pull(1, 330, END), Pull(1, 357, ERROR), Pull(1, 358, RETRY)
+    // expected {id=1, series=[284, 303, 320, 344, 358, 374]}
+    println("Pending: ")
+    store.TARGET.pendingData.forEach[
+      println(it)
+    ]
+  }
+  
   static def void testPull() {
     val store = Store.setup(true)
+    
+    /*println("Last Logs: ")
+    store.logs.forEach[
+      println(it)
+    ]
+    
+    store.cypher("MATCH (n:Log) DELETE n")
+    */
     
     //store.cypher("MATCH (n:Subject) DETACH DELETE n")
     store.cypher("MATCH (n:Pull) DETACH DELETE n")
@@ -72,10 +114,9 @@ class Server {
       studies.forEach[
         val series = get("series") as List<Map>
         series.forEach[
-          val items = get("items") as List<Map>
-          items.forEach[
-            println("ITEM-UID: " + get("uid")) 
-          ]
+          val size = get("size") as Long
+          if (size > 0)
+            println('''SERIES (id=«get("id")», udi=«get("uid")», size=«size», modality=«get("modality")»)''')
         ]
       ]
     ]

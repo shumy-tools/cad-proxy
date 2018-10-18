@@ -15,11 +15,10 @@ class Study {
     val map = #{ UID -> uid, DATE -> date }
     val res = db.cypher('''
       MATCH (s:«Subject.NODE») WHERE id(s) = «subjectID»
-      MERGE (n:«NODE» {«UID»: $«UID»})
+      MERGE (s)-[:HAS]->(n:«NODE» {«UID»: $«UID»})
         ON CREATE SET
           n.«UID» = $«UID»,
           n.«DATE» = $«DATE»
-      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     

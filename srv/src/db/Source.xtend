@@ -35,7 +35,7 @@ class Source {
     res.head.get("id") as Long
   }
   
-  def getAll() {
+  def all() {
     db.cypher('''MATCH (n:«NODE») RETURN
       id(n) as id,
       n.«ACTIVE» as «ACTIVE»,
@@ -67,10 +67,10 @@ class Source {
   }
   
   def pullThrottle() {
-    val map = #{ "now" -> LocalDateTime.now}
+    val map = #{ "now" -> LocalDateTime.now }
     db.cypher('''
       MATCH (n:«NODE») WHERE n.«ACTIVE» = true
-      OPTIONAL MATCH (n)<-[:«Pull.FROM»]-(p:«Pull.NODE»)
+      OPTIONAL MATCH (n)<-[:FROM]-(p:«Pull.NODE»)
         WHERE p.«Pull.TYPE» = "FIND" AND p.«Pull.STATUS» = "END"
       WITH id(n) as id, n.«AET» as aet, n.«HOST» as host, n.«PORT» as port, n.«PULL_INTERVAL» as interval, max(p.«Pull.STARTED») as last
         WHERE last IS NULL OR duration.between(last, $now).minutes > interval
