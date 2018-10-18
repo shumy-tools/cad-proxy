@@ -11,8 +11,6 @@ class Study {
   public static val UID               = "uid"
   public static val DATE              = "date"
   
-  public static val HAS               = "HAS"
-  
   def Long create(Long subjectID, String uid, LocalDate date) {
     val map = #{ UID -> uid, DATE -> date }
     val res = db.cypher('''
@@ -21,7 +19,7 @@ class Study {
         ON CREATE SET
           n.«UID» = $«UID»,
           n.«DATE» = $«DATE»
-      MERGE (s)-[:«HAS»]->(n)
+      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     

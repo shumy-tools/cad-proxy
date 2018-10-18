@@ -62,7 +62,7 @@ class PullService {
       
       if (!requests.contains(seriesUID)) {
         // if this is executed, it's probably a bug from the PACS server!
-        logger.error("On-Store trying to store an non requested seriesUID: {}", seriesUID)
+        logger.error("On-Store trying to store a non requested seriesUID: {}", seriesUID)
         //TODO: set the series status/error ?
         return
       }

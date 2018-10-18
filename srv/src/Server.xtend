@@ -9,6 +9,8 @@ import dicom.model.DStudy
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.time.LocalDate
+import java.util.List
+import java.util.Map
 
 class Server {
   static val log = LoggerFactory.getLogger(Server)
@@ -16,16 +18,44 @@ class Server {
   def static void main(String[] args) {
     testPull
     //testDicom
+    
+    //1.2.826.0.1.3680043.2.1174.4.1.5.2572560 -> 56f3c197-53f8-4d08-95e1-9c3868b58b90
+    /*val store = Store.setup(true)
+    println(store.cypher('''
+      MATCH (p:Subject)-[:HAS]->(s:Study)
+        WHERE s.uid = "1.2.826.0.1.3680043.2.1174.4.1.5.2572560"
+      RETURN s.uid as study, p.udi as subject
+    ''').head)
+    */
+  }
+  
+  static def void insertSubjects(Store store) {
+    val dSrv = new DLocal("MICAEL", "192.168.21.250", 1104, null)
+    val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
+    
+    val query = new DQuery(DPatient.RL)
+    con.find(query, DPatient.ID, DPatient.SEX, DPatient.BIRTHDATE).forEach[
+      store.SUBJECT.create(2L, UUID.randomUUID.toString, get(DPatient.ID), get(DPatient.SEX), get(DPatient.BIRTHDATE))
+    ]
+    
+    con.close
+    
+    println("Subjects: ")
+    store.cypher("MATCH (n:Subject) RETURN id(n), n.pid, n.birthday, n.sex").forEach[
+      println(it)
+    ]
   }
   
   static def void testPull() {
     val store = Store.setup(true)
-    //store.SUBJECT.create(2L, UUID.randomUUID.toString, "Z0VYEYND6669", "M", LocalDate.parse("1956-02-21"))
     
+    //store.cypher("MATCH (n:Subject) DETACH DELETE n")
     store.cypher("MATCH (n:Pull) DETACH DELETE n")
     store.cypher("MATCH (n:Study) DETACH DELETE n")
     store.cypher("MATCH (n:Series) DETACH DELETE n")
     store.cypher("MATCH (n:Item) DETACH DELETE n")
+    
+    //store.insertSubjects
     
     val pullSrv = new PullService(store, "MICAEL", "192.168.21.250") 
     pullSrv.find(LocalDate.parse("2017-01-30")).forEach[
@@ -38,7 +68,16 @@ class Server {
         println(it)
       ]
       
-      println(store.PULL.data(pullID, Pull.Type.STORE))
+      val studies = store.PULL.data(pullID, Pull.Type.STORE).get("studies") as List<Map>
+      studies.forEach[
+        val series = get("series") as List<Map>
+        series.forEach[
+          val items = get("items") as List<Map>
+          items.forEach[
+            println("ITEM-UID: " + get("uid")) 
+          ]
+        ]
+      ]
     ]
   }
   

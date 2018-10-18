@@ -12,8 +12,6 @@ class Item {
   public static val SEQ               = "seq"
   public static val TIME              = "time"
   
-  public static val HAS               = "HAS"
-  
   def Long linkCreate(String seriesUID, String uid, Integer seq, LocalDateTime time) {
     val map = #{ "suid" -> seriesUID, UID -> uid, SEQ -> seq, TIME -> time }
     val res = db.cypher('''
@@ -23,7 +21,7 @@ class Item {
           n.«UID» = $«UID»,
           n.«SEQ» = $«SEQ»,
           n.«TIME» = $«TIME»
-      MERGE (s)-[:«HAS»]->(n)
+      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     

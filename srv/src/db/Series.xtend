@@ -14,8 +14,6 @@ class Series {
   public static val ELIGIBLE          = "eligible"
   public static val COMPLETED         = "completed"
   
-  public static val HAS               = "HAS"
-  
   def Long create(Long studyID, String uid, Integer seq, String modality) {
     val map = #{ UID -> uid, SEQ -> seq, MODALITY -> modality }
     val res = db.cypher('''
@@ -28,7 +26,7 @@ class Series {
           n.«UID» = $«UID»,
           n.«SEQ» = $«SEQ»,
           n.«MODALITY» = $«MODALITY»
-      MERGE (s)-[:«HAS»]->(n)
+      MERGE (s)-[:HAS]->(n)
       RETURN id(n) as id
     ''', map)
     

@@ -24,29 +24,20 @@ class Pull {
   def Long create(Long linkID, Type type) {
     val map = #{ STARTED -> LocalDateTime.now, TYPE -> type.name, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
     
-    val res = switch type {
-      case FIND: db.cypher('''
-        MATCH (l:«Source.NODE») WHERE id(l) = «linkID»
+    val res = db.cypher('''
+      «IF type == Type.FIND»
+        MATCH (s:«Source.NODE») WHERE id(s) = «linkID»
+      «ELSE»
+        MATCH (s:«NODE») WHERE id(s) = «linkID» AND s.«TYPE» = "«Type.FIND.name»"
+      «ENDIF»
         CREATE (n:«NODE») SET
           n.«STARTED» = $«STARTED»,
           n.«TYPE» = $«TYPE»,
           n.«STATUS» = $«STATUS»,
           n.«S_TIME» = $«S_TIME»
-        MERGE (n)-[:«FROM»]->(l)
+        MERGE (n)-[:«FROM»]->(s)
         RETURN id(n) as id
-      ''', map)
-      
-      case STORE: db.cypher('''
-        MATCH (l:«NODE») WHERE id(l) = «linkID» AND l.«TYPE» = "«Type.FIND.name»"
-        CREATE (n:«NODE») SET
-          n.«STARTED» = $«STARTED»,
-          n.«TYPE» = $«TYPE»,
-          n.«STATUS» = $«STATUS»,
-          n.«S_TIME» = $«S_TIME»
-        MERGE (n)-[:«FROM»]->(l)
-        RETURN id(n) as id
-      ''', map)
-    }
+    ''', map)
     
     if (res.empty)
       throw new RuntimeException('''Unable to create pull. Probable cause, no valid linkID=«linkID»''')
@@ -73,8 +64,8 @@ class Pull {
   def Long linkStudies(Long pullID, Iterable<Long> studiesIDs) {
     val map = #{ "sids" -> studiesIDs }
     val res = db.cypher('''
-      MATCH (n:«NODE») WHERE id(n) = «pullID»
-      MATCH (s:«Study.NODE») WHERE id(s) IN $sids
+      MATCH (n:«NODE»), (s:«Study.NODE»)
+        WHERE id(n) = «pullID» AND id(s) IN $sids
       MERGE (n)-[l:«THESE»]->(s)
       RETURN count(l) as size
     ''', map)
@@ -83,45 +74,33 @@ class Pull {
   }
   
   def data(Long pullID, Type type) {
-    val dataMatch = '''
-      MATCH (n)-[:«THESE»]->(s:«Study.NODE»)-[:«Study.HAS»]->(e:«Series.NODE»)
-      OPTIONAL MATCH (e)-[:«Series.HAS»]->(i:«Item.NODE»)
-    '''
-    
     val res = db.cypher('''
       «IF type == Type.FIND»
         MATCH (l:«Source.NODE»)<-[:«FROM»]-(n:«NODE»)
         WHERE id(n) = «pullID» AND n.«TYPE» = "«type.name»"
-        «dataMatch»
-        WITH id(l) as source, "«Source.NODE»" as sType,
+        WITH id(l) as source, "«Source.NODE»" as sType, n
       «ELSE»
         MATCH (l:«NODE»)-[:«FROM»]->(n:«NODE»)
         WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.FIND.name»"
-        «dataMatch»
-        WITH id(n) as source, "«NODE»" as sType,
+        WITH id(n) as source, "«NODE»" as sType, n
       «ENDIF»
-        s, e,
-        i {
-          .«Item.UID»,
-          .«Item.SEQ»,
-          .«Item.TIME»
-        } as l_items
-      WITH source, sType, s,
-        e {
+      RETURN source, sType, [(n)-[:«THESE»]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
+        subject: p.«Subject.UDI»,
+        .«Study.UID»,
+        .«Study.DATE»,
+        series: [(s)-[:HAS]->(e:«Series.NODE») | e {
           id: id(e),
           .«Series.UID»,
           .«Series.SEQ»,
           .«Series.MODALITY»,
           .«Series.COMPLETED»,
-          items: collect(l_items)
-        } as l_series
-      WITH source, sType,
-        s {
-          .«Study.UID»,
-          .«Study.DATE»,
-          series: collect(l_series)
-        } as l_study
-      RETURN source, sType, collect(l_study) as studies
+          items: [(e)-[:HAS]->(i:«Item.NODE») | i {
+            .«Item.UID»,
+            .«Item.SEQ»,
+            .«Item.TIME»
+          }]
+        }]
+      }] as studies
     ''')
     
     if (res.empty)
