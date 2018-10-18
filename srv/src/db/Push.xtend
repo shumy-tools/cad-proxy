@@ -75,7 +75,7 @@ class Push {
         .«Series.MODALITY»,
         .«Series.ELIGIBLE»,
         .«Series.COMPLETED»,
-        size: size([(e)-[:HAS]->(i:«Item.NODE») | i])
+        .«Series.SIZE»
       }] as series
     ''')
     

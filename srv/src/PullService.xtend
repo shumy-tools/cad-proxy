@@ -192,7 +192,7 @@ class PullService {
           con.pull(studyUID, seriesUID)[
             if (status === DPull.Status.COMPLETED) {
               println("COMPLETED: " + seriesUID)
-              store.SERIES.completed(seriesID, true)
+              store.SERIES.completed(seriesID)
               logger.info("On-Pull completed for series: {}", seriesUID)
             }
           ]

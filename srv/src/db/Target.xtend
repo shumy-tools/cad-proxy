@@ -58,8 +58,8 @@ class Target {
     db.cypher('''
       MATCH (n:«NODE»)<-[:CONSENT]-(p:«Subject.NODE»)-[:HAS]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
         WHERE p.«Subject.ACTIVE» = true AND n.«ACTIVE» = true
-          AND e.«Series.ELIGIBLE» = true AND e.«Series.COMPLETED» = true AND e.«Series.MODALITY» IN n.«MODALITIES»
-          AND size([(e)-[:HAS]->(i:«Item.NODE») | i]) > 0
+          AND e.«Series.ELIGIBLE» = true AND e.«Series.COMPLETED» = true AND e.size > 0
+          AND e.«Series.MODALITY» IN n.«MODALITIES»
       MATCH (e) WHERE NOT (e)<-[:THESE]-(:«Push.NODE»)-[:TO]->(n) 
         OR (e)<-[:THESE]-(:«Push.NODE» {status:"«Push.Status.RETRY.name»"})-[:TO]->(n)
       RETURN id(n) as id, collect(id(e)) as series
