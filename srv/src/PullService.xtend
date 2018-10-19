@@ -1,5 +1,6 @@
 import db.Pull
 import db.Store
+import db.Series
 import dicom.DLocal
 import dicom.DPull
 import dicom.model.DImage
@@ -102,24 +103,24 @@ class PullService {
     ]
   }
   
-  def Set<Long> find(LocalDate day) {
-    logger.info("On-Find day: {}", day)
+  def Set<Long> pullRequest(LocalDate day) {
+    logger.info("On-Request day: {}", day)
     
     val modalities = store.TARGET.modalities
-    logger.info("On-Find using modalities: {}", modalities)
+    logger.info("On-Request using modalities: {}", modalities)
     
     return store.SOURCE.pullThrottle.map[
       val sourceID = get("id") as Long
-      val findID = store.PULL.create(sourceID, Pull.Type.FIND)
+      val requestID = store.PULL.create(sourceID, Pull.Type.REQ)
       
       try {
         val aet = get("aet") as String
-        logger.info("On-Find using source: {}", aet)
+        logger.info("On-Request using source: {}", aet)
         
         val con = local.connect(aet, get("host") as String, get("port") as Integer)
         
         val studyRes = con.findDayStudies(day)
-        logger.info("On-Find {} study results for day: {}", studyRes.size, day)
+        logger.info("On-Request {} study results for day: {}", studyRes.size, day)
         
         val studies = new HashMap<String, Long>
         studyRes.forEach[
@@ -127,19 +128,19 @@ class PullService {
           val subjectID = store.SUBJECT.activeFrom(sourceID, patientID)
           if (subjectID === null) return;
           
-          logger.debug("On-Find using patientID: {}", patientID)
+          logger.debug("On-Request using patientID: {}", patientID)
           
           // get or create study
           val studyUID = get(DStudy.UID)
           val studyID = store.STUDY.create(subjectID, studyUID, get(DStudy.DATE))
-          logger.debug("On-Find inserted study: {}", studyUID)
+          logger.debug("On-Request inserted study: {}", studyUID)
           studies.put(studyUID, studyID)
         ]
         
-        store.PULL.linkStudies(findID, studies.values)
+        store.PULL.linkStudies(requestID, studies.values)
         
         var seriesRes = con.findDaySeries(day)
-        logger.info("On-Find {} series results for day: {}", studyRes.size, day)
+        logger.info("On-Request {} series results for day: {}", studyRes.size, day)
         
         seriesRes
           .filter[ modalities.contains(get(DSeries.MODALITY)) ]
@@ -151,26 +152,27 @@ class PullService {
             // create series
             val seriesUID = get(DSeries.UID)
             store.SERIES.create(studyID, seriesUID, get(DSeries.NUMBER), get(DSeries.MODALITY))
-            logger.debug("On-Find inserted series: {}", seriesUID)
+            logger.debug("On-Request inserted series: {}", seriesUID)
           ]
         
-        store.PULL.status(findID, Pull.Status.END)
+        store.PULL.status(requestID, Pull.Status.READY)
         con.close
       } catch (Throwable ex) {
         ex.printStackTrace
-        store.PULL.error(findID, ex.message)
+        store.PULL.error(requestID, ex.message)
       }
       
-      return findID
+      return requestID
     ].toSet
   }
   
-  def Long pull(Long findID) {
-    logger.info("On-Pull findID: {}", findID)
+  def Long pull(Long requestID) {
+    logger.info("On-Pull findID: {}", requestID)
+    val data = store.PULL.data(requestID, Pull.Type.REQ)
+    if (data.get("status") != Pull.Status.READY.name)
+      throw new RuntimeException("On-Pull request not ready, requestID: " + requestID)
     
-    val data = store.PULL.data(findID, Pull.Type.FIND)
-    val pullID = store.PULL.create(findID, Pull.Type.STORE)
-    
+    val pullID = store.PULL.create(requestID, Pull.Type.PULL)
     try {
       val sourceID = data.get("source") as Long
       val source = store.SOURCE.byId(sourceID)
@@ -190,20 +192,28 @@ class PullService {
           
           // async pull
           con.pull(studyUID, seriesUID)[
-            if (status === DPull.Status.COMPLETED) {
-              println("COMPLETED: " + seriesUID)
-              store.SERIES.completed(seriesID)
-              logger.info("On-Pull completed for series: {}", seriesUID)
+            switch status {
+              case DPull.Status.OK: logger.debug("On-Pull ok for series: {}", seriesUID)
+              case DPull.Status.COMPLETED: {
+                logger.info("On-Pull completed for series: {}", seriesUID)
+                store.SERIES.status(seriesID, Series.Status.READY)
+              }
+              case DPull.Status.ERROR: {
+                store.error(PullService, "Series status error series: " + seriesUID)
+                store.SERIES.error(seriesID, "DICOM error code: " + dicomErrorCode)
+              }
             }
           ]
         ]
       ]
       
       store.PULL.status(pullID, Pull.Status.END)
+      store.PULL.status(requestID, Pull.Status.END)
       con.close
     } catch (Throwable ex) {
       ex.printStackTrace
       store.PULL.error(pullID, ex.message)
+      store.PULL.updateStatusOnPullTries(requestID)
     }
     
     return pullID

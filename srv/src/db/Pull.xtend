@@ -5,29 +5,32 @@ import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
 @FinalFieldsConstructor
 class Pull {
-  enum Type { FIND, STORE }
-  enum Status { START, END, ERROR }
+  enum Type { REQ, PULL }
+  enum Status { START, READY, END, ERROR }
   
   val NeoDB db
   public static val NODE = Pull.simpleName
   
   public static val STARTED             = "started"
   public static val TYPE                = "type"
+  public static val PULL_TRIES          = "pullTries"
   
   public static val STATUS              = "status"
   public static val S_TIME              = "sTime"
   public static val ERROR               = "error"
   
-  def Long create(Long linkID, Type type) {
+  def Long create(Long sourceID, Type type) {
     val map = #{ STARTED -> LocalDateTime.now, TYPE -> type.name, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
     
     val res = db.cypher('''
-      «IF type == Type.FIND»
-        MATCH (s:«Source.NODE») WHERE id(s) = «linkID»
+      «IF type === Type.REQ»
+        MATCH (s:«Source.NODE») WHERE id(s) = «sourceID»
       «ELSE»
-        MATCH (s:«NODE») WHERE id(s) = «linkID» AND s.«TYPE» = "«Type.FIND.name»"
+        MATCH (s:«NODE») WHERE id(s) = «sourceID» AND s.«TYPE» = "«Type.REQ.name»"
       «ENDIF»
         CREATE (n:«NODE») SET
+          n.«PULL_TRIES» = 0,
+          
           n.«STARTED» = $«STARTED»,
           n.«TYPE» = $«TYPE»,
           n.«STATUS» = $«STATUS»,
@@ -37,9 +40,30 @@ class Pull {
     ''', map)
     
     if (res.empty)
-      throw new RuntimeException('''Unable to create pull. Probable cause, no valid linkID=«linkID»''')
+      throw new RuntimeException('''Unable to create pull or pull-request. Probable cause, no valid sourceID=«sourceID»''')
+    
+    // update pull-tries
+    if (type === Type.PULL)
+      db.cypher('''
+        MATCH (s:«NODE») WHERE id(s) = «sourceID»
+          SET s.«PULL_TRIES» = size([(l:«NODE»)-[:FROM]->(s) | l])
+      ''')
+    
+    return res.head.get("id") as Long
+  }
+  
+  def void updateStatusOnPullTries(Long pullID) {
+    val res = db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «pullID» AND n.«TYPE» = "«Type.REQ.name»"
+      RETURN n.«PULL_TRIES» as tries
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find pull-request for pullID=«pullID»''')
       
-    res.head.get("id") as Long
+    val pullTries = res.head.get("tries") as Integer
+    if (pullTries > 2)
+      error(pullID, "Exceeded the number of pull-tries!")
   }
   
   def void status(Long pullID, Status status) {
@@ -54,7 +78,7 @@ class Pull {
     val map = #{ ERROR -> error, S_TIME -> LocalDateTime.now }
     db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «pullID»
-      SET n.«STATUS» = «Status.ERROR.name», n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
+      SET n.«STATUS» = "«Status.ERROR.name»", n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
     ''', map)
   }
   
@@ -72,16 +96,16 @@ class Pull {
   
   def data(Long pullID, Type type) {
     val res = db.cypher('''
-      «IF type == Type.FIND»
+      «IF type == Type.REQ»
         MATCH (l:«Source.NODE»)<-[:FROM]-(n:«NODE»)
         WHERE id(n) = «pullID» AND n.«TYPE» = "«type.name»"
         WITH id(l) as source, "«Source.NODE»" as sType, n
       «ELSE»
         MATCH (l:«NODE»)-[:FROM]->(n:«NODE»)
-        WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.FIND.name»"
+        WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.REQ.name»"
         WITH id(n) as source, "«NODE»" as sType, n
       «ENDIF»
-      RETURN source, sType, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
+      RETURN source, sType, n.«STATUS» as status, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
         subject: p.«Subject.UDI»,
         id: id(s),
         .«Study.UID»,
@@ -92,8 +116,10 @@ class Pull {
           .«Series.SEQ»,
           .«Series.MODALITY»,
           .«Series.ELIGIBLE»,
-          .«Series.COMPLETE»,
-          .«Series.SIZE»
+          .«Series.SIZE»,
+          .«Series.STATUS»,
+          .«Series.S_TIME»,
+          .«Series.ERROR»
         }]
       }] as studies
     ''')

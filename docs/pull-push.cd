@@ -44,14 +44,16 @@ class Source {
 class Pull {
   started: dt
   type: enum
+  pull-tries?: int
   ..
   status: enum
   s-time: int
   error?: str
 }
 note bottom
-  type: FIND, STORE
-  status: START, END, ERROR
+  type - status
+  REQ - [START, READY, END, ERROR]
+  PULL - [START, END, ERROR]
 end note
 
 class Subject {
@@ -75,11 +77,16 @@ class Series {
   uid: str
   seq: int
   modality: str
-  ..
   eligible: bool
-  complete: bool
   size: int
+  ..
+  status: enum
+  s-time: int
+  error?: str
 }
+note top
+  status: START, READY, ERROR
+end note
 
 class Item {
   uid: str

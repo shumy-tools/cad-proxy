@@ -16,8 +16,8 @@ class Server {
   static val log = LoggerFactory.getLogger(Server)
   
   def static void main(String[] args) {
-    //testPull
-    testPendingData
+    testPull
+    //testPendingData
     //testDicom
     
     //1.2.826.0.1.3680043.2.1174.4.1.5.2572560 -> 56f3c197-53f8-4d08-95e1-9c3868b58b90
@@ -100,17 +100,17 @@ class Server {
     //store.insertSubjects
     
     val pullSrv = new PullService(store, "MICAEL", "192.168.21.250") 
-    pullSrv.find(LocalDate.parse("2017-01-30")).forEach[
+    pullSrv.pullRequest(LocalDate.parse("2017-01-30")).forEach[
       println("Find-ID: " + it)
-      println(store.PULL.data(it, Pull.Type.FIND))
+      println(store.PULL.data(it, Pull.Type.REQ))
       
       val pullID = pullSrv.pull(it)
       println("Pulls: ")
-      store.cypher("MATCH (n:Pull)-[:FROM]->(l) RETURN id(n), n.type, n.status, id(l)").forEach[
+      store.cypher("MATCH (n:Pull)-[:FROM]->(l) RETURN id(n), n.type, n.status, n.pullTries, id(l)").forEach[
         println(it)
       ]
       
-      val studies = store.PULL.data(pullID, Pull.Type.STORE).get("studies") as List<Map>
+      val studies = store.PULL.data(pullID, Pull.Type.PULL).get("studies") as List<Map>
       studies.forEach[
         val series = get("series") as List<Map>
         series.forEach[

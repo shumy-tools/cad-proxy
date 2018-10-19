@@ -46,7 +46,7 @@ class Push {
     val map = #{ ERROR -> error, S_TIME -> LocalDateTime.now }
     db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «pushID»
-      SET n.«STATUS» = «Status.ERROR.name», n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
+      SET n.«STATUS» = "«Status.ERROR.name»", n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
     ''', map)
   }
   
@@ -67,15 +67,17 @@ class Push {
       MATCH (l:«Target.NODE»)<-[:FROM]-(n:«NODE»)
         WHERE id(n) = «pushID»
       WITH id(l) as target, n
-      RETURN target, [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
+      RETURN target, n.«STATUS» as status, [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
         subject: p.«Subject.UDI»,
         id: id(e),
         .«Series.UID»,
         .«Series.SEQ»,
         .«Series.MODALITY»,
         .«Series.ELIGIBLE»,
-        .«Series.COMPLETE»,
-        .«Series.SIZE»
+        .«Series.SIZE»,
+        .«Series.STATUS»,
+        .«Series.S_TIME»,
+        .«Series.ERROR»
       }] as series
     ''')
     
