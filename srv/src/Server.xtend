@@ -19,7 +19,7 @@ class Server {
     //setupSubject
     //testFind
     //testPull
-    testPendingData
+    testPush
     //testDicom
     
     //1.2.826.0.1.3680043.2.1174.4.1.5.2572560 -> 56f3c197-53f8-4d08-95e1-9c3868b58b90
@@ -70,7 +70,7 @@ class Server {
     println(pullSrv.find(query))
   }
   
-  static def void testPendingData() {
+  static def void testPush() {
     val store = Store.setup(true)
     
     //store.cypher("MATCH (:Subject)-[c:CONSENT]->(:Target) DELETE c")
@@ -85,6 +85,8 @@ class Server {
     ''')*/
     
     //store.cypher("MATCH (n:Target) WHERE n.name IS NULL DETACH DELETE n")
+    
+    store.cypher("MATCH (n:Push) DETACH DELETE n")
     
     println("Targets: ")
     store.TARGET.all.forEach[
@@ -101,6 +103,17 @@ class Server {
     store.TARGET.pendingData.forEach[
       println(it)
     ]
+    
+    val pushSrv = new PushService(store)
+    pushSrv.push.forEach[
+      println("Push-ID: " + it)
+      println(store.PUSH.data(it))
+    ]
+    
+    println("Pending: ")
+    store.TARGET.pendingData.forEach[
+      println(it)
+    ]
   }
   
   static def void testPull() {
@@ -110,10 +123,9 @@ class Server {
     store.logs.forEach[
       println(it)
     ]
-    
-    store.cypher("MATCH (n:Log) DELETE n")
     */
     
+    store.cypher("MATCH (n:Log) DELETE n")
     store.cypher("MATCH (n:Pull) DETACH DELETE n")
     store.cypher("MATCH (n:Study) DETACH DELETE n")
     store.cypher("MATCH (n:Series) DETACH DELETE n")

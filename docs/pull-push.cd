@@ -100,7 +100,7 @@ class Push {
   error?: str
 }
 note top
-  status: START, CREATE, ZIP, TRANSMIT, END, ERROR
+  status: START, PREPARE, TRANSMIT, END, ERROR, RETRY
 end note
 
 class Target {

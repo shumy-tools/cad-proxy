@@ -71,6 +71,14 @@ class Pull {
     return res.head.get("id") as Long
   }
   
+  def void these(Long requestID, Long studyID) {
+    db.cypher('''
+      MATCH (n:«NODE»), (s:«Study.NODE»)
+        WHERE id(n) = «requestID» AND id(s) = «studyID»
+      MERGE (n)-[:THESE]->(s)
+    ''')
+  }
+  
   def void updateStatusOnPullTries(Long pullID) {
     val res = db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «pullID» AND n.«TYPE» = "«Type.REQ.name»"
@@ -99,14 +107,6 @@ class Pull {
       MATCH (n:«NODE») WHERE id(n) = «pullID»
       SET n.«STATUS» = "«Status.ERROR.name»", n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
     ''', map)
-  }
-  
-  def void linkStudy(Long requestID, Long studyID) {
-    db.cypher('''
-      MATCH (n:«NODE»), (s:«Study.NODE»)
-        WHERE id(n) = «requestID» AND id(s) = «studyID»
-      MERGE (n)-[:THESE]->(s)
-    ''')
   }
   
   def data(Long pullID, Type type) {

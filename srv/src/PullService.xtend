@@ -255,7 +255,7 @@ class PullService {
             
             val studyDate = study.get("date") as LocalDate
             val studyID = store.STUDY.create(subjectID, studyUID, studyDate)
-            store.PULL.linkStudy(requestID, studyID)
+            store.PULL.these(requestID, studyID)
             
             // add series
             val seriesMap = study.get("series") as Map<String, Object>

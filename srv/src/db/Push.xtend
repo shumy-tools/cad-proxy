@@ -1,12 +1,12 @@
 package db
 
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import java.time.LocalDateTime
 import java.util.Set
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
 @FinalFieldsConstructor
 class Push {
-  enum Status { START, ZIP, TRANSMIT, END, ERROR, RETRY }
+  enum Status { START, PREPARE, TRANSMIT, END, ERROR, RETRY }
     
   val NeoDB db
   public static val NODE = Push.simpleName
@@ -17,21 +17,32 @@ class Push {
   public static val S_TIME              = "sTime"
   public static val ERROR               = "error"
   
-  def Long create(Long targetID, String type, String status) {
-    val map = #{ STARTED -> LocalDateTime.now, STATUS -> status, S_TIME -> LocalDateTime.now }
+  def Long create(Long targetID, Set<Long> seriesIDs) {
+    val map = #{ "series" -> seriesIDs, STARTED -> LocalDateTime.now, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
     val res = db.cypher('''
-      MATCH (t:«Target.NODE») WHERE id(t) = «targetID»
-      CREATE (n:«NODE»)
-        ON CREATE SET
-          n.«STARTED» = $«STARTED»,
-          n.«STATUS» = $«STATUS»,
-          n.«S_TIME» = $«S_TIME»
-      MERGE (n)-[:TO]->(t)
+      CREATE (n:«NODE») SET
+        n.«STARTED» = $«STARTED»,
+        n.«STATUS» = $«STATUS»,
+        n.«S_TIME» = $«S_TIME»
+      WITH n
+      MATCH (t:«Target.NODE»), (e:«Series.NODE»)
+        WHERE id(t) = «targetID» AND id(e) IN $series
+      MERGE (e)<-[:THESE]-(n)-[:TO]->(t)
       RETURN id(n) as id
     ''', map)
     
-    if (res.empty) return -1L
-    res.head.get("id") as Long
+    if (res.empty)
+      throw new RuntimeException('''Unable to create a push. Probable cause, no valid targetID=«targetID»''')
+      
+    return res.head.get("id") as Long
+  }
+  
+  def void these(Long pushID, Long seriesID) {
+    db.cypher('''
+      MATCH (n:«NODE»), (e:«Series.NODE»)
+        WHERE id(n) = «pushID» AND id(e) = «seriesID»
+      MERGE (n)-[:THESE]->(e)
+    ''')
   }
   
   def void status(Long pushID, Status status) {
@@ -50,23 +61,11 @@ class Push {
     ''', map)
   }
   
-  def Long linkSeries(Long pushID, Set<Long> seriesIDs) {
-    val map = #{ "sids" -> seriesIDs }
-    val res = db.cypher('''
-      MATCH (n:«NODE»), (s:«Series.NODE»)
-        WHERE id(n) = «pushID» AND id(s) IN $sids
-      MERGE (n)-[l:THESE]->(s)
-      RETURN count(l) as size
-    ''', map)
-    
-    res.head.get("size") as Long
-  }
-  
   def data(Long pushID) {
     val res = db.cypher('''
-      MATCH (l:«Target.NODE»)<-[:FROM]-(n:«NODE»)
+      MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
         WHERE id(n) = «pushID»
-      WITH id(l) as target, n
+      WITH id(t) as target, n
       RETURN target, n.«STATUS» as status, [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
         subject: p.«Subject.UDI»,
         id: id(e),
