@@ -239,36 +239,41 @@ class PullService {
       val requestID = store.PULL.createRequest(sourceID)
       requests.add(requestID)
       
-      source.forEach[ patientID, patientValue |
-        val patient = (patientValue as Map<String, Object>)
-        
-        val subjectID = store.SUBJECT.from(sourceID, patientID) // can be null
-        if (subjectID === null) return;
-        
-        logger.debug("On-Request using subjectID: {}", subjectID)
-        
-        // add studies
-        val studiesMap = patient.get("studies") as Map<String, Object>
-        (studiesMap as Map<String, Object>).forEach[studyUID, studyValue |
-          val study = (studyValue as Map<String, Object>)
+      try {
+        source.forEach[ patientID, patientValue |
+          val patient = (patientValue as Map<String, Object>)
           
-          val studyDate = study.get("date") as LocalDate
-          val studyID = store.STUDY.create(subjectID, studyUID, studyDate)
-          store.PULL.linkStudy(requestID, studyID)
+          val subjectID = store.SUBJECT.from(sourceID, patientID) // can be null
+          if (subjectID === null) return;
           
-          // add series
-          val seriesMap = study.get("series") as Map<String, Object>
-          seriesMap.forEach[seriesUID, seriesValue |
-            val series = (seriesValue as Map<String, Object>)
+          logger.debug("On-Request using subjectID: {}", subjectID)
+          
+          // add studies
+          val studiesMap = patient.get("studies") as Map<String, Object>
+          (studiesMap as Map<String, Object>).forEach[studyUID, studyValue |
+            val study = (studyValue as Map<String, Object>)
             
-            val seq = series.get("number") as Integer
-            val modality = series.get("modality") as String
-            store.SERIES.create(studyID, seriesUID, seq, modality)
+            val studyDate = study.get("date") as LocalDate
+            val studyID = store.STUDY.create(subjectID, studyUID, studyDate)
+            store.PULL.linkStudy(requestID, studyID)
+            
+            // add series
+            val seriesMap = study.get("series") as Map<String, Object>
+            seriesMap.forEach[seriesUID, seriesValue |
+              val series = (seriesValue as Map<String, Object>)
+              
+              val seq = series.get("number") as Integer
+              val modality = series.get("modality") as String
+              store.SERIES.create(studyID, seriesUID, seq, modality)
+            ]
           ]
         ]
-      ]
-      
-      store.PULL.status(requestID, Pull.Status.READY)
+        
+        store.PULL.status(requestID, Pull.Status.READY)
+      } catch (Throwable ex) {
+        store.exception(PullService, ex)
+        store.PULL.error(requestID, ex.message)
+      }
     ]
     
     return requests
