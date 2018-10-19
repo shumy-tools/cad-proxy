@@ -19,35 +19,54 @@ class Pull {
   public static val S_TIME              = "sTime"
   public static val ERROR               = "error"
   
-  def Long create(Long sourceID, Type type) {
-    val map = #{ STARTED -> LocalDateTime.now, TYPE -> type.name, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
+  def Long createRequest(Long sourceID) {
+    val map = #{ STARTED -> LocalDateTime.now, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
     
     val res = db.cypher('''
-      «IF type === Type.REQ»
-        MATCH (s:«Source.NODE») WHERE id(s) = «sourceID»
-      «ELSE»
-        MATCH (s:«NODE») WHERE id(s) = «sourceID» AND s.«TYPE» = "«Type.REQ.name»"
-      «ENDIF»
-        CREATE (n:«NODE») SET
-          n.«PULL_TRIES» = 0,
-          
-          n.«STARTED» = $«STARTED»,
-          n.«TYPE» = $«TYPE»,
-          n.«STATUS» = $«STATUS»,
-          n.«S_TIME» = $«S_TIME»
-        MERGE (n)-[:FROM]->(s)
-        RETURN id(n) as id
+      MATCH (s:«Source.NODE»)
+        WHERE id(s) = «sourceID»
+      CREATE (n:«NODE») SET
+        n.«PULL_TRIES» = 0,
+        n.«TYPE» = "«Type.REQ»",
+        
+        n.«STARTED» = $«STARTED»,
+        n.«STATUS» = $«STATUS»,
+        n.«S_TIME» = $«S_TIME»
+      MERGE (n)-[:FROM]->(s) 
+      RETURN id(n) as id
     ''', map)
     
     if (res.empty)
-      throw new RuntimeException('''Unable to create pull or pull-request. Probable cause, no valid sourceID=«sourceID»''')
+      throw new RuntimeException('''Unable to create a pull-request. Probable cause, no valid sourceID=«sourceID»''')
+    
+    return res.head.get("id") as Long
+  }
+  
+  def Long createPull(Long requestID) {
+    val map = #{ STARTED -> LocalDateTime.now, STATUS -> Status.START.name, S_TIME -> LocalDateTime.now }
+    
+    val res = db.cypher('''
+      MATCH (s:«NODE»)
+        WHERE id(s) = «requestID» AND s.«TYPE» = "«Type.REQ.name»"
+      CREATE (n:«NODE») SET
+        n.«PULL_TRIES» = 0,
+        n.«TYPE» = "«Type.PULL.name»",
+        
+        n.«STARTED» = $«STARTED»,
+        n.«STATUS» = $«STATUS»,
+        n.«S_TIME» = $«S_TIME»
+      MERGE (n)-[:FROM]->(s)
+      RETURN id(n) as id
+    ''', map)
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to create a pull. Probable cause, no valid requestID=«requestID»''')
     
     // update pull-tries
-    if (type === Type.PULL)
-      db.cypher('''
-        MATCH (s:«NODE») WHERE id(s) = «sourceID»
-          SET s.«PULL_TRIES» = size([(l:«NODE»)-[:FROM]->(s) | l])
-      ''')
+    db.cypher('''
+      MATCH (s:«NODE») WHERE id(s) = «requestID»
+        SET s.«PULL_TRIES» = size([(l:«NODE»)-[:FROM]->(s) | l])
+    ''')
     
     return res.head.get("id") as Long
   }
@@ -82,16 +101,12 @@ class Pull {
     ''', map)
   }
   
-  def Long linkStudies(Long pullID, Iterable<Long> studiesIDs) {
-    val map = #{ "sids" -> studiesIDs }
-    val res = db.cypher('''
+  def void linkStudy(Long requestID, Long studyID) {
+    db.cypher('''
       MATCH (n:«NODE»), (s:«Study.NODE»)
-        WHERE id(n) = «pullID» AND id(s) IN $sids
-      MERGE (n)-[l:THESE]->(s)
-      RETURN count(l) as size
-    ''', map)
-    
-    res.head.get("size") as Long
+        WHERE id(n) = «requestID» AND id(s) = «studyID»
+      MERGE (n)-[:THESE]->(s)
+    ''')
   }
   
   def data(Long pullID, Type type) {

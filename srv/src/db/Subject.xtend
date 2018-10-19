@@ -1,8 +1,8 @@
 package db
 
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
-import java.time.LocalDate
 import java.time.LocalDateTime
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import java.util.Set
 
 @FinalFieldsConstructor
 class Subject {
@@ -13,38 +13,42 @@ class Subject {
   public static val A_TIME            = "aTime"
   
   public static val UDI               = "udi"
-  public static val PID               = "pid"
   
-  public static val SEX               = "sex"
-  public static val BIRTHDAY          = "birthday"
-  
-  def Long create(Long sourceID, String udi, String pid, String sex, LocalDate birthday) {
-    val map = #{ UDI -> udi, PID -> pid, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
+  def Long create(String udi) {
+    val map = #{ UDI -> udi, A_TIME -> LocalDateTime.now}
     val res = db.cypher('''
-      MATCH (s:«Source.NODE») WHERE id(s) = «sourceID»
-      MERGE (n:«NODE» {«UDI»: $«UDI»})-[:FROM]->(s)
+      MERGE (n:«NODE» {«UDI»: $«UDI»})
         ON CREATE SET
           n.«ACTIVE» = true,
-          
           n.«A_TIME» = $«A_TIME»,
-          n.«UDI» = $«UDI»,
-          n.«PID» = $«PID»,
-          n.«SEX» = $«SEX»,
-          n.«BIRTHDAY» = $«BIRTHDAY»
+          n.«UDI» = $«UDI»
       RETURN id(n) as id
     ''', map)
-    
-    if (res.empty)
-      throw new RuntimeException('''Unable to create subject. Probable cause, no valid sourceID=«sourceID»''')
     
     res.head.get("id") as Long
   }
   
-  def activeFrom(Long sourceID, String patientID) {
+  def void is(Long subjectID, Long patientID) {
+    db.cypher('''
+      MATCH (n:«NODE»), (p:«Patient.NODE»)
+        WHERE id(n) = «subjectID» AND id(p) = «patientID»
+      MERGE (n)-[:IS]->(p)
+    ''')
+  }
+  
+  def void consent(Long subjectID, Long targetID) {
+    db.cypher('''
+      MATCH (n:«NODE»), (t:«Target.NODE»)
+        WHERE id(n) = «subjectID» AND id(t) = «targetID»
+      MERGE (n)-[:CONSENT]->(t)
+    ''')
+  }
+  
+  def from(Long sourceID, String patientID) {
     val map = #{ "pid" -> patientID }
     val res = db.cypher('''
-      MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
-      WHERE n.«ACTIVE» = true AND n.«PID» = $pid AND id(s) = «sourceID»
+      MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
+        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» = $pid
       RETURN id(n) as id
     ''', map)
     
@@ -52,15 +56,23 @@ class Subject {
     res.head.get("id") as Long
   }
   
+  def boolean exist(Long sourceID, Set<String> patientIDs) {
+    val map = #{ "pids" -> patientIDs }
+    val res = db.cypher('''
+      MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
+        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» IN $pids
+      RETURN count(s) as size
+    ''', map)
+    
+    return res.head.get("size") as Long !== 0L
+  }
+  
   def all() {
     db.cypher('''MATCH (n:«NODE») RETURN
       id(n) as id,
       n.«ACTIVE» as «ACTIVE»,
       n.«A_TIME» as «A_TIME»,
-      n.«UDI» as «UDI»,
-      n.«PID» as «PID»,
-      n.«SEX» as «SEX»,
-      n.«BIRTHDAY» as «BIRTHDAY»
+      n.«UDI» as «UDI»
     ''')
   }
 }

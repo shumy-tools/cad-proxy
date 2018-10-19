@@ -1,7 +1,7 @@
 package db
 
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import java.time.LocalDateTime
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
 @FinalFieldsConstructor
 class Source {
@@ -45,6 +45,20 @@ class Source {
       n.«HOST» as «HOST»,
       n.«PORT» as «PORT»
     ''')
+  }
+  
+  def idFromAET(String aet) {
+    val map = #{ AET -> aet }
+    val res = db.cypher('''
+      MATCH (n:«NODE»)
+        WHERE n.«AET» = $«AET»
+      RETURN id(n) as id
+    ''', map)
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find source by aet: «aet»''')
+    
+    res.head.get("id") as Long
   }
   
   def byId(Long id) {

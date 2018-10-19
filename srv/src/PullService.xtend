@@ -1,10 +1,11 @@
 import db.Pull
-import db.Store
 import db.Series
+import db.Store
 import dicom.DLocal
 import dicom.DPull
 import dicom.model.DImage
 import dicom.model.DPatient
+import dicom.model.DQuery
 import dicom.model.DResult
 import dicom.model.DSeries
 import dicom.model.DStudy
@@ -13,13 +14,55 @@ import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.HashMap
+import java.util.HashSet
 import java.util.List
 import java.util.Map
 import java.util.Set
-import org.dcm4che2.io.DicomOutputStream
-import org.slf4j.LoggerFactory
 import org.dcm4che2.data.Tag
 import org.dcm4che2.data.VR
+import org.dcm4che2.io.DicomOutputStream
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import org.slf4j.LoggerFactory
+
+@FinalFieldsConstructor
+class FindResult {
+  public val Map<String, Object> results
+  
+  override toString() {
+    val sb = new StringBuilder
+    results.forEach[ sourceAET, sourceValue |
+      val source = (sourceValue as Map<String, Object>)
+      sb.append("\n" + sourceAET)
+      
+      source.forEach[ patientID, patientValue |
+        val patient = (patientValue as Map<String, Object>)
+        sb.append("\n  " + patientID)
+        sb.append("\n    sex: " + patient.get("sex"))
+        sb.append("\n    birthday: " + patient.get("birthday"))
+        
+        val studiesMap = patient.get("studies") as Map<String, Object>
+        (studiesMap as Map<String, Object>).forEach[studyUID, studyValue |
+          val study = (studyValue as Map<String, Object>)
+          sb.append("\n    study: " + studyUID)
+          sb.append("\n      date: " + study.get("date"))
+          
+          val seriesMap = study.get("series") as Map<String, Object>
+          seriesMap.forEach[seriesUID, seriesValue |
+            val series = (seriesValue as Map<String, Object>)
+            sb.append("\n      series: " + seriesUID)
+            sb.append("\n        modality: " + series.get("modality"))
+            sb.append("\n        number: " + series.get("number"))
+            sb.append("\n        date: " + series.get("date"))
+            sb.append("\n        time: " + series.get("time"))
+          ]
+        ]
+      ]
+    ]
+    
+    return sb.toString
+  }
+  
+}
 
 class PullService {
   static val logger = LoggerFactory.getLogger(PullService)
@@ -98,72 +141,137 @@ class PullService {
         
         store.ITEM.create(seriesID, imageUID, imageSeq, imageDT)
       } catch (Throwable ex) {
-        store.error(PullService, "Unable to save file for imageUID: " + seriesUID + " -> " + ex.message)
+        store.exception(PullService, ex)
       }
     ]
   }
   
-  def Set<Long> pullRequest(LocalDate day) {
-    logger.info("On-Request day: {}", day)
+  def FindResult find(DQuery query) {
+    logger.debug("On-Find : {}", query)
     
-    val modalities = store.TARGET.modalities
-    logger.info("On-Request using modalities: {}", modalities)
+    // <study-uid> -> Study 
+    val tmpStudies = new HashMap<String, Object>
     
-    return store.SOURCE.pullThrottle.map[
-      val sourceID = get("id") as Long
-      val requestID = store.PULL.create(sourceID, Pull.Type.REQ)
-      
+    // <source-aet>#<patient-id> -> Patient
+    val results = new HashMap<String, Object>
+    
+    store.SOURCE.all.forEach[
       try {
         val aet = get("aet") as String
-        logger.info("On-Request using source: {}", aet)
+        logger.debug("On-Find using source: {}", aet)
         
         val con = local.connect(aet, get("host") as String, get("port") as Integer)
         
-        val studyRes = con.findDayStudies(day)
-        logger.info("On-Request {} study results for day: {}", studyRes.size, day)
+        // retrieve studies
+        val studyRes = con.find(DQuery.RetrieveLevel.STUDY, query,
+          DPatient.ID, DPatient.SEX, DPatient.BIRTHDAY, DStudy.UID, DStudy.DATE
+        )
         
-        val studies = new HashMap<String, Long>
+        logger.debug("On-Find {} study results: {}", studyRes.size)
+        if (studyRes.empty)
+          return;
+        
+        val source = new HashMap<String, Object>
+        results.put(aet, source)
+        
         studyRes.forEach[
           val patientID = get(DPatient.ID)
-          val subjectID = store.SUBJECT.activeFrom(sourceID, patientID)
-          if (subjectID === null) return;
-          
-          logger.debug("On-Request using patientID: {}", patientID)
-          
-          // get or create study
           val studyUID = get(DStudy.UID)
-          val studyID = store.STUDY.create(subjectID, studyUID, get(DStudy.DATE))
-          logger.debug("On-Request inserted study: {}", studyUID)
-          studies.put(studyUID, studyID)
+          
+          val patient = source.get(patientID) as Map<String, Object> ?: #{
+            "sex" -> get(DPatient.SEX),
+            "birthday" -> get(DPatient.BIRTHDAY),
+            "studies" -> new HashMap<String, Object>
+          }
+          
+          source.put(patientID, patient)
+          
+          val studies = patient.get("studies") as Map<String, Object>
+          studies.put(studyUID, #{
+            "date" -> get(DStudy.DATE),
+            "series" -> new HashMap<String, Object>
+          })
+          
+          tmpStudies.put(studyUID, studies.get(studyUID))
         ]
         
-        store.PULL.linkStudies(requestID, studies.values)
+        // retrieve series
+        var seriesRes = con.find(DQuery.RetrieveLevel.SERIES, query,
+          DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME
+        )
+        logger.debug("On-Find {} series results: {}", seriesRes.size)
         
-        var seriesRes = con.findDaySeries(day)
-        logger.info("On-Request {} series results for day: {}", studyRes.size, day)
+        seriesRes.forEach[
+          val studyUID = get(DStudy.UID)
+          val study = tmpStudies.get(studyUID) as Map<String, Object>
+          
+          val series = study.get("series") as Map<String, Object>
+          series.put(get(DSeries.UID), #{
+            "modality" -> get(DSeries.MODALITY),
+            "number" -> get(DSeries.NUMBER),
+            "date" -> get(DSeries.DATE),
+            "time" -> get(DSeries.TIME)
+          })
+        ]
         
-        seriesRes
-          .filter[ modalities.contains(get(DSeries.MODALITY)) ]
-          .forEach[
-            val studyUID = get(DStudy.UID)
-            val studyID = studies.get(studyUID)
-            if (studyID === null) return
-            
-            // create series
-            val seriesUID = get(DSeries.UID)
-            store.SERIES.create(studyID, seriesUID, get(DSeries.NUMBER), get(DSeries.MODALITY))
-            logger.debug("On-Request inserted series: {}", seriesUID)
-          ]
-        
-        store.PULL.status(requestID, Pull.Status.READY)
-        con.close
       } catch (Throwable ex) {
-        ex.printStackTrace
-        store.PULL.error(requestID, ex.message)
+        store.exception(PullService, ex)
+      }
+    ]
+    
+    return new FindResult(results)
+  }
+  
+  def Set<Long> pullRequests(FindResult result) {
+    val modalities = store.TARGET.modalities
+    logger.info("On-Request using modalities: {}", modalities)
+    
+    val requests = new HashSet<Long>
+    result.results.forEach[ sourceAET, sourceValue |
+      val sourceID = store.SOURCE.idFromAET(sourceAET)
+      val source = (sourceValue as Map<String, Object>)
+      
+      if (!store.SUBJECT.exist(sourceID, source.keySet)) {
+        logger.info("On-Request no linked or active subjects for sourceID: {}", sourceID)
+        return;
       }
       
-      return requestID
-    ].toSet
+      val requestID = store.PULL.createRequest(sourceID)
+      requests.add(requestID)
+      
+      source.forEach[ patientID, patientValue |
+        val patient = (patientValue as Map<String, Object>)
+        
+        val subjectID = store.SUBJECT.from(sourceID, patientID) // can be null
+        if (subjectID === null) return;
+        
+        logger.debug("On-Request using subjectID: {}", subjectID)
+        
+        // add studies
+        val studiesMap = patient.get("studies") as Map<String, Object>
+        (studiesMap as Map<String, Object>).forEach[studyUID, studyValue |
+          val study = (studyValue as Map<String, Object>)
+          
+          val studyDate = study.get("date") as LocalDate
+          val studyID = store.STUDY.create(subjectID, studyUID, studyDate)
+          store.PULL.linkStudy(requestID, studyID)
+          
+          // add series
+          val seriesMap = study.get("series") as Map<String, Object>
+          seriesMap.forEach[seriesUID, seriesValue |
+            val series = (seriesValue as Map<String, Object>)
+            
+            val seq = series.get("number") as Integer
+            val modality = series.get("modality") as String
+            store.SERIES.create(studyID, seriesUID, seq, modality)
+          ]
+        ]
+      ]
+      
+      store.PULL.status(requestID, Pull.Status.READY)
+    ]
+    
+    return requests
   }
   
   def Long pull(Long requestID) {
@@ -172,7 +280,7 @@ class PullService {
     if (data.get("status") != Pull.Status.READY.name)
       throw new RuntimeException("On-Pull request not ready, requestID: " + requestID)
     
-    val pullID = store.PULL.create(requestID, Pull.Type.PULL)
+    val pullID = store.PULL.createPull(requestID)
     try {
       val sourceID = data.get("source") as Long
       val source = store.SOURCE.byId(sourceID)
@@ -211,7 +319,7 @@ class PullService {
       store.PULL.status(requestID, Pull.Status.END)
       con.close
     } catch (Throwable ex) {
-      ex.printStackTrace
+      store.exception(PullService, ex)
       store.PULL.error(pullID, ex.message)
       store.PULL.updateStatusOnPullTries(requestID)
     }

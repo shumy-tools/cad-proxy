@@ -22,6 +22,7 @@ import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
 import java.time.LocalDate
+import org.dcm4che2.data.VR
 
 class DConnection {
   static val log = LoggerFactory.getLogger(DConnection)
@@ -85,6 +86,10 @@ class DConnection {
   }
   
   def List<DResult> find(DQuery query, DField<?> ...retrieveFields) {
+    find(query.rl, query, retrieveFields)
+  }
+  
+  def List<DResult> find(DQuery.RetrieveLevel rl, DQuery query, DField<?> ...retrieveFields) {
     prepareLink
     
     val keys = new BasicDicomObject
@@ -96,6 +101,7 @@ class DConnection {
       if(!keys.contains(f.tag))
         keys.putNull(f.tag, f.vr)
     
+    keys.putString(Tag.QueryRetrieveLevel, VR.CS, rl.name)
     val rsp = ass.cfind(UID.StudyRootQueryRetrieveInformationModelFIND, 0, keys, tsuid, Integer.MAX_VALUE)
     
     val result = new ArrayList<DicomObject>

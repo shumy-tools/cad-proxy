@@ -16,6 +16,8 @@ class Server {
   static val log = LoggerFactory.getLogger(Server)
   
   def static void main(String[] args) {
+    //setupSubject
+    //testFind
     testPull
     //testPendingData
     //testDicom
@@ -30,21 +32,42 @@ class Server {
     */
   }
   
-  static def void insertSubjects(Store store) {
+  static def void setupSubject() {
+    val store = Store.setup(true)
+    
+    store.cypher("MATCH (n:Patient) DETACH DELETE n")
+    store.cypher("MATCH (n:Subject) DETACH DELETE n")
+    
+    val sourceID = store.SOURCE.idFromAET("DICOOGLE-STORAGE")
+    val subjectID = store.SUBJECT.create(UUID.randomUUID.toString)
+    
+    //consent all targets
+    store.TARGET.all.forEach[
+      store.SUBJECT.consent(subjectID, get("id") as Long)
+    ]
+    
     val dSrv = new DLocal("MICAEL", "192.168.21.250", 1104, null)
     val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
     
-    val query = new DQuery(DPatient.RL)
-    con.find(query, DPatient.ID, DPatient.SEX, DPatient.BIRTHDATE).forEach[
-      store.SUBJECT.create(2L, UUID.randomUUID.toString, get(DPatient.ID), get(DPatient.SEX), get(DPatient.BIRTHDATE))
+    con.find(new DQuery, DPatient.ID, DPatient.SEX, DPatient.BIRTHDAY).forEach[
+      val patientID = store.PATIENT.create(sourceID, get(DPatient.ID), get(DPatient.SEX), get(DPatient.BIRTHDAY))
+      store.SUBJECT.is(subjectID, patientID)
     ]
     
     con.close
     
     println("Subjects: ")
-    store.cypher("MATCH (n:Subject) RETURN id(n), n.pid, n.birthday, n.sex").forEach[
+    store.cypher("MATCH (n:Subject) RETURN id(n) as id, [(n)-[:IS]->(p:Patient) | p { .pid, .sex, .birthday }] as is").forEach[
       println(it)
     ]
+  }
+  
+  static def void testFind() {
+    val store = Store.setup(true)
+    val pullSrv = new PullService(store, "MICAEL", "192.168.21.250")
+    
+    val query = new DQuery => [set(DStudy.DATE, "20170130")]
+    println(pullSrv.find(query))
   }
   
   static def void testPendingData() {
@@ -91,17 +114,16 @@ class Server {
     store.cypher("MATCH (n:Log) DELETE n")
     */
     
-    //store.cypher("MATCH (n:Subject) DETACH DELETE n")
     store.cypher("MATCH (n:Pull) DETACH DELETE n")
     store.cypher("MATCH (n:Study) DETACH DELETE n")
     store.cypher("MATCH (n:Series) DETACH DELETE n")
     store.cypher("MATCH (n:Item) DETACH DELETE n")
     
-    //store.insertSubjects
+    val pullSrv = new PullService(store, "MICAEL", "192.168.21.250")
+    val result = pullSrv.find(new DQuery => [set(DStudy.DATE, "20170130")])
     
-    val pullSrv = new PullService(store, "MICAEL", "192.168.21.250") 
-    pullSrv.pullRequest(LocalDate.parse("2017-01-30")).forEach[
-      println("Find-ID: " + it)
+    pullSrv.pullRequests(result).forEach[
+      println("Request-ID: " + it)
       println(store.PULL.data(it, Pull.Type.REQ))
       
       val pullID = pullSrv.pull(it)

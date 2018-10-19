@@ -1,20 +1,18 @@
 package dicom.model
 
+import java.util.List
 import org.dcm4che2.data.BasicDicomObject
 import org.dcm4che2.data.DicomObject
-import org.dcm4che2.data.Tag
-import org.dcm4che2.data.VR
-import java.util.List
 
 class DQuery extends DObject {
   enum RetrieveLevel { PATIENT, STUDY, SERIES, IMAGE }
   
-  val RetrieveLevel rl
-  
+  public val RetrieveLevel rl
+
+  new() { this(RetrieveLevel.PATIENT) }
   new(RetrieveLevel rl) {
     super(new BasicDicomObject())
     this.rl = rl
-    obj.putString(Tag.QueryRetrieveLevel, VR.CS, rl.name)
   }
   
   def void copyTo(DicomObject to) {

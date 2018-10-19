@@ -52,10 +52,10 @@ class DPatient {
   public static val ID = new DField(String, "P-ID", Tag.PatientID, VR.LO)
   public static val NAME = new DField(String, "P-NAME", Tag.PatientName, VR.PN)
   public static val SEX = new DField(String, "P-SEX", Tag.PatientSex, VR.CS)
-  public static val BIRTHDATE = new DField(LocalDate, "P-BIRTHDATE", Tag.PatientBirthDate, VR.DA)
+  public static val BIRTHDAY = new DField(LocalDate, "P-BIRTHDAY", Tag.PatientBirthDate, VR.DA)
   public static val STUDY_COUNT = new DField(Integer, "P-STUDY-COUNT", Tag.NumberOfPatientRelatedStudies, VR.IS)
   
-  public static val DEFAULT = #[ID, NAME, SEX, BIRTHDATE] as List<? extends DField<?>>
+  public static val DEFAULT = #[ID, NAME, SEX, dicom.model.DPatient.BIRTHDAY] as List<? extends DField<?>>
 }
 
 class DStudy {

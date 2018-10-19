@@ -33,9 +33,6 @@ class Source {
   active: bool
   a-time: dt
   ..
-  /'pull time interval in hours and number of pulls behind confirming completness'/
-  pull-interval: int
-  ..
   aet: str
   host: str
   port: int
@@ -56,16 +53,17 @@ note bottom
   PULL - [START, END, ERROR]
 end note
 
+class Patient {
+  pid: str
+  sex: enum
+  birthday: date
+}
+
 class Subject {
   active: bool
   a-time: dt
   ..
   udi: str
-  pid: str
-
-  /'M,F,U - Male, Female, Undefined'/
-  sex?: enum
-  birthday?: date
 }
 
 class Study {
@@ -119,8 +117,9 @@ Pull .left.> Source:FROM
 Pull .up.> Pull:FROM
 Pull o-down-> Study:THESE
 
-Subject --> Source:FROM
 Subject --> Target:CONSENT
+Subject *-left-> Patient:IS
+Patient --> Source:FROM
 
 Subject *-right-> Study:HAS
 Study *-right-> Series:HAS
