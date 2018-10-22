@@ -75,15 +75,17 @@ class Series {
   uid: str
   seq: int
   modality: str
-  eligible: bool
   size: int
+  ..
+  eligible: bool
+  reason?: str
   ..
   status: enum
   s-time: int
   error?: str
 }
 note top
-  status: START, READY, ERROR
+  status: START, READY, ARCHIVE, ERROR
 end note
 
 class Item {

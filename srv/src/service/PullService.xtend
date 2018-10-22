@@ -1,3 +1,5 @@
+package service
+
 import db.Pull
 import db.Series
 import db.Store
@@ -21,27 +23,92 @@ import java.util.Set
 import org.dcm4che2.data.Tag
 import org.dcm4che2.data.VR
 import org.dcm4che2.io.DicomOutputStream
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 
-@FinalFieldsConstructor
 class FindResult {
   public val Map<String, Object> results
+  val boolean filtered
+  
+  new (Map<String, Object> results) {this(results, false)}
+  new(Map<String, Object> results, boolean filtered) {
+    this.results = results
+    this.filtered = filtered
+  }
+  
+  def FindResult filter(Set<String> modalities) {
+    if (filtered) return this
+    
+    val newResults = new HashMap<String, Object>
+    results.forEach[ sourceAET, sourceValue |
+      val patientsMap = (sourceValue as Map<String, Object>)
+      
+      val filteredPatients = patientsMap.keySet.map[ patientID |
+        val patient = (patientsMap.get(patientID) as Map<String, Object>)
+        
+        val studiesMap = patient.get("studies") as Map<String, Object>
+        val filteredStudies = studiesMap.keySet.map[ studyUID |
+          val study = (studiesMap.get(studyUID) as Map<String, Object>)
+          
+          val seriesMap = study.get("series") as Map<String, Object>
+          val newSeriesMap = seriesMap.filter[ seriesUID, seriesValue |
+            val series = (seriesValue as Map<String, Object>)
+            modalities.contains(series.get("modality"))
+          ]
+          
+          // new study with filtered series
+          new HashMap<String, Object>() => [
+            put("uid", studyUID)
+            putAll(study)
+            if (!newSeriesMap.empty)
+              put("series", newSeriesMap)
+          ]
+        ].filter[ get("series") !== null ]
+        
+        // new patient with filtered studies
+        new HashMap<String, Object>() => [
+          put("pid", patientID)
+          putAll(patient)
+          if (!filteredStudies.empty) {
+            val newStudiesMap = new HashMap<String, Object>
+            filteredStudies.forEach[
+              newStudiesMap.put(get("uid") as String, it)
+            ]
+            
+            put("studies", newStudiesMap)
+          }
+            
+        ]
+      ].filter[ get("studies") !== null ]
+      
+      // put new source with filtered patients
+      if (!filteredPatients.empty) {
+        val newPatientsMap = new HashMap<String, Object>
+        filteredPatients.forEach[
+          newPatientsMap.put(get("pid") as String, it)
+        ]
+        
+        newResults.put(sourceAET, newPatientsMap)
+      }
+        
+    ]
+    
+    return new FindResult(newResults, true)
+  }
   
   override toString() {
     val sb = new StringBuilder
     results.forEach[ sourceAET, sourceValue |
-      val source = (sourceValue as Map<String, Object>)
+      val patientsMap = (sourceValue as Map<String, Object>)
       sb.append("\n" + sourceAET)
       
-      source.forEach[ patientID, patientValue |
+      patientsMap.forEach[ patientID, patientValue |
         val patient = (patientValue as Map<String, Object>)
         sb.append("\n  " + patientID)
         sb.append("\n    sex: " + patient.get("sex"))
         sb.append("\n    birthday: " + patient.get("birthday"))
         
         val studiesMap = patient.get("studies") as Map<String, Object>
-        (studiesMap as Map<String, Object>).forEach[studyUID, studyValue |
+        studiesMap.forEach[studyUID, studyValue |
           val study = (studyValue as Map<String, Object>)
           sb.append("\n    study: " + studyUID)
           sb.append("\n      date: " + study.get("date"))
@@ -115,9 +182,10 @@ class PullService {
         return
       }
       
-      if(!isEligible) {
+      val reason = isEligible
+      if(reason !== null) {
         logger.debug("On-Store filter, non eligible series: {}", seriesUID)
-        store.SERIES.eligible(seriesID, false)
+        store.SERIES.nonEligible(seriesID, reason)
         return
       }
       
@@ -126,6 +194,9 @@ class PullService {
       val imageDT = LocalDateTime.of(get(DImage.CONTENT_DATE), get(DImage.CONTENT_TIME))
       
       try {
+        //logger.info("Pre-Process file: (series={}, image={})", seriesUID, imageUID)
+        //TODO: pre-process file (i.e. pixel data anonimization)
+        
         logger.info("Cache file: (series={}, image={})", seriesUID, imageUID)
         val dir = Paths.get(cachePath + "/s" + seriesID)
         Files.createDirectories(dir)
@@ -156,77 +227,74 @@ class PullService {
     val results = new HashMap<String, Object>
     
     store.SOURCE.all.forEach[
-      try {
-        val aet = get("aet") as String
-        logger.debug("On-Find using source: {}", aet)
+      val aet = get("aet") as String
+      logger.debug("On-Find using source: {}", aet)
+      
+      val con = local.connect(aet, get("host") as String, get("port") as Integer)
+      
+      // retrieve studies
+      val studyRes = con.find(DQuery.RetrieveLevel.STUDY, query,
+        DPatient.ID, DPatient.SEX, DPatient.BIRTHDAY, DStudy.UID, DStudy.DATE
+      )
+      
+      logger.debug("On-Find {} study results: {}", studyRes.size)
+      if (studyRes.empty)
+        return;
+      
+      val source = new HashMap<String, Object>
+      results.put(aet, source)
+      
+      studyRes.forEach[
+        val patientID = get(DPatient.ID)
+        val studyUID = get(DStudy.UID)
         
-        val con = local.connect(aet, get("host") as String, get("port") as Integer)
+        val patient = source.get(patientID) as Map<String, Object> ?: #{
+          "sex" -> get(DPatient.SEX),
+          "birthday" -> get(DPatient.BIRTHDAY),
+          "studies" -> new HashMap<String, Object>
+        }
         
-        // retrieve studies
-        val studyRes = con.find(DQuery.RetrieveLevel.STUDY, query,
-          DPatient.ID, DPatient.SEX, DPatient.BIRTHDAY, DStudy.UID, DStudy.DATE
-        )
+        source.put(patientID, patient)
         
-        logger.debug("On-Find {} study results: {}", studyRes.size)
-        if (studyRes.empty)
-          return;
+        val studies = patient.get("studies") as Map<String, Object>
+        studies.put(studyUID, #{
+          "date" -> get(DStudy.DATE),
+          "series" -> new HashMap<String, Object>
+        })
         
-        val source = new HashMap<String, Object>
-        results.put(aet, source)
+        tmpStudies.put(studyUID, studies.get(studyUID))
+      ]
+      
+      // retrieve series
+      var seriesRes = con.find(DQuery.RetrieveLevel.SERIES, query,
+        DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME
+      )
+      logger.debug("On-Find {} series results: {}", seriesRes.size)
+      
+      seriesRes.forEach[
+        val studyUID = get(DStudy.UID)
+        val study = tmpStudies.get(studyUID) as Map<String, Object>
         
-        studyRes.forEach[
-          val patientID = get(DPatient.ID)
-          val studyUID = get(DStudy.UID)
-          
-          val patient = source.get(patientID) as Map<String, Object> ?: #{
-            "sex" -> get(DPatient.SEX),
-            "birthday" -> get(DPatient.BIRTHDAY),
-            "studies" -> new HashMap<String, Object>
-          }
-          
-          source.put(patientID, patient)
-          
-          val studies = patient.get("studies") as Map<String, Object>
-          studies.put(studyUID, #{
-            "date" -> get(DStudy.DATE),
-            "series" -> new HashMap<String, Object>
-          })
-          
-          tmpStudies.put(studyUID, studies.get(studyUID))
-        ]
-        
-        // retrieve series
-        var seriesRes = con.find(DQuery.RetrieveLevel.SERIES, query,
-          DStudy.UID, DSeries.UID, DSeries.MODALITY, DSeries.NUMBER, DSeries.DATE, DSeries.TIME
-        )
-        logger.debug("On-Find {} series results: {}", seriesRes.size)
-        
-        seriesRes.forEach[
-          val studyUID = get(DStudy.UID)
-          val study = tmpStudies.get(studyUID) as Map<String, Object>
-          
-          val series = study.get("series") as Map<String, Object>
-          series.put(get(DSeries.UID), #{
-            "modality" -> get(DSeries.MODALITY),
-            "number" -> get(DSeries.NUMBER),
-            "date" -> get(DSeries.DATE),
-            "time" -> get(DSeries.TIME)
-          })
-        ]
-        
-      } catch (Throwable ex) {
-        store.exception(PullService, ex)
-      }
+        val series = study.get("series") as Map<String, Object>
+        series.put(get(DSeries.UID), #{
+          "modality" -> get(DSeries.MODALITY),
+          "number" -> get(DSeries.NUMBER),
+          "date" -> get(DSeries.DATE),
+          "time" -> get(DSeries.TIME)
+        })
+      ]
     ]
     
     return new FindResult(results)
   }
   
-  def Set<Long> pullRequests(FindResult result) {
+  def Set<Long> pullRequests(FindResult rawResult) {
     val modalities = store.TARGET.modalities
     logger.info("On-Request using modalities: {}", modalities)
     
+    val result = rawResult.filter(modalities)
     val requests = new HashSet<Long>
+    
     result.results.forEach[ sourceAET, sourceValue |
       val sourceID = store.SOURCE.idFromAET(sourceAET)
       val source = (sourceValue as Map<String, Object>)
@@ -360,9 +428,11 @@ class PullService {
     return view
   }
   
-  private def isEligible(DResult result) {
+  private def String isEligible(DResult result) {
     //TODO: filter non eligible results. i.e filtering some manufacturers!
-    return true
+    
+    // if non eligible, return a reason
+    return null
   }
   
 }

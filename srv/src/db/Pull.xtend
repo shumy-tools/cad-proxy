@@ -112,15 +112,15 @@ class Pull {
   def data(Long pullID, Type type) {
     val res = db.cypher('''
       «IF type == Type.REQ»
-        MATCH (l:«Source.NODE»)<-[:FROM]-(n:«NODE»)
+        MATCH (s:«Source.NODE»)<-[:FROM]-(n:«NODE»)
         WHERE id(n) = «pullID» AND n.«TYPE» = "«type.name»"
-        WITH id(l) as source, "«Source.NODE»" as sType, n
+        WITH id(s) as source, "«Source.NODE»" as type, n
       «ELSE»
-        MATCH (l:«NODE»)-[:FROM]->(n:«NODE»)
+        MATCH (l:«NODE»)-[:FROM]->(n:«NODE»)-[:FROM]->(s:«Source.NODE»)
         WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.REQ.name»"
-        WITH id(n) as source, "«NODE»" as sType, n
+        WITH id(s) as source, "«NODE»" as type, n
       «ENDIF»
-      RETURN source, sType, n.«STATUS» as status, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
+      RETURN source, type, n.«STATUS» as status, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
         subject: p.«Subject.UDI»,
         id: id(s),
         .«Study.UID»,

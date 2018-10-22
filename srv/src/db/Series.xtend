@@ -5,16 +5,19 @@ import java.time.LocalDateTime
 
 @FinalFieldsConstructor
 class Series {
-  enum Status { START, READY, END, ERROR, RETRY }
+  // the series status if only for pull iterations. Push iteration does not change status.
+  enum Status { START, READY, END, ERROR, ARCHIVE }
   
   val NeoDB db
   public static val NODE = Series.simpleName
   
-  public static val UID               = "uid"
-  public static val SEQ               = "seq"
-  public static val MODALITY          = "modality"
-  public static val ELIGIBLE          = "eligible"
-  public static val SIZE              = "size"
+  public static val UID                 = "uid"
+  public static val SEQ                 = "seq"
+  public static val MODALITY            = "modality"
+  public static val SIZE                = "size"
+  
+  public static val ELIGIBLE            = "eligible"
+  public static val REASON              = "reason"
   
   public static val STATUS              = "status"
   public static val S_TIME              = "sTime"
@@ -43,11 +46,12 @@ class Series {
     res.head.get("id") as Long
   }
   
-  def void eligible(Long seriesID, boolean isEligible) {
+  def void nonEligible(Long seriesID, String reason) {
+    val map = #{ REASON -> reason }
     db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «seriesID»
-      SET n.«ELIGIBLE» = «isEligible»
-    ''')
+      SET n.«ELIGIBLE» = false, reason = $«REASON»
+    ''', map)
   }
   
   def void status(Long seriesID, Status status) {
@@ -77,5 +81,17 @@ class Series {
       return null
     
     return res.head.get("id") as Long
+  }
+  
+  def items(Long seriesID) {
+    db.cypher('''
+      MATCH (n:«NODE»)-[:HAS]->(i:«Item.NODE»)
+        WHERE id(n) = «seriesID»
+      RETURN 
+        id(i) as id,
+        i.«Item.UID» as «Item.UID»,
+        i.«Item.SEQ» as «Item.SEQ»,
+        i.«Item.TIME» as «Item.TIME»
+    ''')
   }
 }

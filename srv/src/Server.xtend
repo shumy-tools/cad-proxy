@@ -1,16 +1,18 @@
-import db.Store
 import db.Pull
+import db.Store
 import dicom.DLocal
 import dicom.model.DImage
 import dicom.model.DPatient
 import dicom.model.DQuery
 import dicom.model.DSeries
 import dicom.model.DStudy
-import org.slf4j.LoggerFactory
-import java.util.UUID
-import java.time.LocalDate
 import java.util.List
 import java.util.Map
+import java.util.UUID
+import org.slf4j.LoggerFactory
+import service.PullService
+import service.PushService
+import service.TransmitService
 
 class Server {
   static val log = LoggerFactory.getLogger(Server)
@@ -104,16 +106,18 @@ class Server {
       println(it)
     ]
     
-    val pushSrv = new PushService(store)
-    pushSrv.push.forEach[
+    val transSrv = new TransmitService
+    val pushSrv = new PushService(store, transSrv)
+    pushSrv.pushRequests.forEach[
       println("Push-ID: " + it)
       println(store.PUSH.data(it))
+      pushSrv.push(it)
     ]
     
-    println("Pending: ")
+    /*println("Pending: ")
     store.TARGET.pendingData.forEach[
       println(it)
-    ]
+    ]*/
   }
   
   static def void testPull() {

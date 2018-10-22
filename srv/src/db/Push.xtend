@@ -65,7 +65,7 @@ class Push {
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
         WHERE id(n) = «pushID»
-      WITH id(t) as target, n
+      WITH t.«Target.UDI» as target, n
       RETURN target, n.«STATUS» as status, [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
         subject: p.«Subject.UDI»,
         id: id(e),
@@ -79,6 +79,27 @@ class Push {
         .«Series.ERROR»
       }] as series
     ''')
+    
+    /*val res = db.cypher('''
+      MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
+        WHERE id(n) = «pushID»
+      WITH t.«Target.UDI» as target, n
+      RETURN target, n.«STATUS» as status,
+        [(n)-[:THESE]->(:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | {
+          udi: p.«Subject.UDI», 
+          series: [(n)-[:THESE]->(e:«Series.NODE») | e {
+            id: id(e),
+            .«Series.UID»,
+            .«Series.SEQ»,
+            .«Series.MODALITY»,
+            .«Series.ELIGIBLE»,
+            .«Series.SIZE»,
+            .«Series.STATUS»,
+            .«Series.S_TIME»,
+            .«Series.ERROR»
+          }]
+        }] as subjects
+    ''')*/
     
     if (res.empty)
       throw new RuntimeException('''Unable to find data for pushID: «pushID»''')

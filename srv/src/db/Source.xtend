@@ -80,7 +80,7 @@ class Source {
     res.head
   }
   
-  def pullThrottle() {
+  /*def pullThrottle() {
     val map = #{ "now" -> LocalDateTime.now }
     db.cypher('''
       MATCH (n:«NODE») WHERE n.«ACTIVE» = true
@@ -90,5 +90,5 @@ class Source {
         WHERE last IS NULL OR duration.between(last, $now).minutes > interval
       RETURN id, aet, host, port, last
     ''', map)
-  }
+  }*/
 }
