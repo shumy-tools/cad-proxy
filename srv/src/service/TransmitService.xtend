@@ -1,17 +1,24 @@
 package service
 
+import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.io.OutputStream
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
-import java.nio.file.Paths
 import java.nio.file.Files
+import java.nio.file.Paths
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
 @FinalFieldsConstructor
-class DPush {
-  enum Status { OK, COMPLETED, ERROR }
+class TransmitStream extends ByteArrayOutputStream {
+  val OutputStream os
   
-  public val Status status
-  //public val Integer error
+  override close() throws IOException {
+    //TODO: replace the test code with data transmission: (Encrypt-then-MAC, Channel-Transmit)
+    
+    os.write(buf, 0, count)
+    os.close
+    println("CLOSE-STREAM")
+  }
 }
 
 class TransmitService {
@@ -25,11 +32,7 @@ class TransmitService {
     file.delete
     file.createNewFile
     
-    new FileOutputStream(file)
-  }
-  
-  // (DPush) => void onPush
-  def void transmit() {
-    
+    val fos = new FileOutputStream(file)
+    return new TransmitStream(fos)
   }
 }

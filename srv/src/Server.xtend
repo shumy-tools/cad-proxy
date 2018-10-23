@@ -1,3 +1,4 @@
+import crypto.KeyPairHelper
 import db.Pull
 import db.Store
 import dicom.DLocal
@@ -13,15 +14,22 @@ import org.slf4j.LoggerFactory
 import service.PullService
 import service.PushService
 import service.TransmitService
+import java.security.Security
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 class Server {
   static val log = LoggerFactory.getLogger(Server)
   
   def static void main(String[] args) {
+    Security.addProvider(new BouncyCastleProvider)
+    
+    val kp = new KeyPairHelper()
+    kp.genKeyPair
+    
     //setupSubject
     //testFind
     //testPull
-    testPush
+    //testPush
     //testDicom
     
     //1.2.826.0.1.3680043.2.1174.4.1.5.2572560 -> 56f3c197-53f8-4d08-95e1-9c3868b58b90

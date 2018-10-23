@@ -21,11 +21,12 @@ sourceSets {
 }
 
 dependencies {
-  compile 'ch.qos.logback:logback-classic:1.2.+' // 1.2.3
   compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
-  //compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.+' //2.15.0
+  compile 'ch.qos.logback:logback-classic:1.2.+' // 1.2.3
   
   compile 'info.picocli:picocli:1.+' // 1.0.1
+  compile 'org.bouncycastle:bcprov-jdk15on:1.6'
+  
   compile 'dcm4che:dcm4che-imageio:2.+' // 2.0.29
   compile 'dcm4che:dcm4che-net:2.+' // 2.0.29
   compile 'org.neo4j:neo4j:3.4.+' // 3.4.9

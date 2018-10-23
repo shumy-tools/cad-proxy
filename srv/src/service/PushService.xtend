@@ -47,13 +47,8 @@ class PushService {
     val targetUDI = data.get("target") as String
     val series = data.get("series") as List<Map<String, Object>>
     
-    // prepare zip output
     val zipFile = prepare(pushID, targetUDI, series)
-    
-    // transmit
     transmit(pushID, zipFile)
-    
-    //TODO: if transmission OK, set Push-END
   }
   
   private def prepare(Long pushID, String targetUDI, List<Map<String, Object>> series) {
@@ -111,7 +106,13 @@ class PushService {
   private def transmit(Long pushID, ZipOutputStream zipFile) {
     store.PUSH.status(pushID, Push.Status.TRANSMIT)
     
-    zipFile => [ flush close ]
+    try {
+      zipFile => [ flush close ]
+      store.PUSH.status(pushID, Push.Status.END)
+    } catch(Throwable ex) {
+      store.exception(PushService, ex)
+      store.PUSH.error(pushID, ex.message)
+    }
   }
   
   private def zipAddFile(ZipOutputStream zipFile, String path, byte[] buffer) {
