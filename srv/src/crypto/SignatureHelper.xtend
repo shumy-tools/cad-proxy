@@ -19,7 +19,7 @@ class SignatureHelper {
     return dsa.sign
   }
   
-  def verifySignature(PublicKey pubKey, byte[] plaintext, byte[] signature) {  
+  def verify(PublicKey pubKey, byte[] plaintext, byte[] signature) {  
     val dsaVerify = Signature.getInstance(algorithm, "BC")
     dsaVerify.initVerify(pubKey)
     dsaVerify.update(plaintext)

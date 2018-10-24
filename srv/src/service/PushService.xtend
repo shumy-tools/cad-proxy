@@ -11,18 +11,21 @@ import java.util.Set
 import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 
-@FinalFieldsConstructor
 class PushService {
   static val logger = LoggerFactory.getLogger(PushService)
   
   val Store store
   val TransmitService transmit
   
-  //TODO: move this to a DB config. Load on PullService instantiation.
-  val cachePath = "./data/cache"
+  val String cachePath
+  
+  new(Store store, TransmitService transmit) {
+    this.store = store
+    this.transmit = transmit
+    this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
+  }
   
   def Set<Long> pushRequests() {
     val requests = new HashSet<Long>
@@ -38,11 +41,10 @@ class PushService {
   def void push(Long pushID) {
     logger.info("On-Push pushID: {}", pushID)
     val data = store.PUSH.data(pushID)
+    
+    //TODO: accept Push-RETRY and verify if series are archived! Pull series again, on manual request?
     if (data.get("status") != Push.Status.START.name)
       throw new RuntimeException("On-Push request not started, pushID: " + pushID)
-    
-    
-    //TODO: if Push-RETRY verify if series are archived! Pull series again, on manual request?
     
     val targetUDI = data.get("target") as String
     val series = data.get("series") as List<Map<String, Object>>
@@ -107,10 +109,10 @@ class PushService {
     store.PUSH.status(pushID, Push.Status.TRANSMIT)
     
     try {
-      zipFile => [ flush close ]
+      zipFile => [ close ]
       store.PUSH.status(pushID, Push.Status.END)
     } catch(Throwable ex) {
-      store.exception(PushService, ex)
+      store.LOG.exception(PushService, ex)
       store.PUSH.error(pushID, ex.message)
     }
   }

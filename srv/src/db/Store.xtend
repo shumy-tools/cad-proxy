@@ -1,14 +1,10 @@
 package db
 
+import db.mng.Log
+import db.mng.Key
 import java.util.Map
-import org.slf4j.LoggerFactory
-import java.time.LocalDateTime
-import java.io.StringWriter
-import java.io.PrintWriter
 
 class Store {
-  static val logger = LoggerFactory.getLogger("LOGGER")
-  
   val NeoDB db
   
   public val Target   TARGET
@@ -21,11 +17,12 @@ class Store {
   public val Pull     PULL
   public val Push     PUSH
   
-  static val dbPath = "./data/db"
+  public val Log      LOG
+  public val Key      KEY
   
-  static def Store setup(boolean isProd) {
-    val db = if (isProd) new NeoDB(dbPath) else new NeoDB("./test")
-    return new Store(db)
+  static def Store setup() {
+    val dbPath = System.getProperty("dbPath")
+    return new Store(new NeoDB(dbPath))
   }
   
   def cypher(String cypher) {
@@ -36,46 +33,8 @@ class Store {
     db.cypher(cypher, params)
   }
   
-  def void exception(Class<?> clazz, Throwable ex) {
-    val stack = new StringWriter()
-    ex.printStackTrace(new PrintWriter(stack))
-    
-    val map = #{ "class" -> clazz.name, "stamp" -> LocalDateTime.now, "msg" -> ex.message, "stack" -> stack.toString }
-    db.cypher('''
-      CREATE (l:Log {
-        type: "EXCEPTION",
-        class: $class,
-        stamp: $stamp,
-        msg: $msg,
-        stack: $stack
-      })
-    ''', map)
-  }
-  
-  def void error(Class<?> clazz, String msg) {
-    logger.error(msg)
-    val map = #{ "class" -> clazz.name, "stamp" -> LocalDateTime.now, "msg" -> msg }
-    db.cypher('''
-      CREATE (l:Log {
-        type: "ERROR",
-        class: $class,
-        stamp: $stamp,
-        msg: $msg
-      })
-    ''', map)
-  }
-  
-  def logs() {
-    db.cypher('''MATCH (l:Log) RETURN
-      l.type as type,
-      l.class as class,
-      l.stamp as stamp,
-      l.msg as msg
-    ''')
-  }
-  
   private new(NeoDB db) {
-    this.db =db
+    this.db = db
     db => [
       cypher('''CREATE CONSTRAINT ON (n:«Target.NODE») ASSERT n.«Target.UDI» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Source.NODE») ASSERT n.«Source.AET» IS UNIQUE''')
@@ -86,6 +45,9 @@ class Store {
       
       cypher('''CREATE INDEX ON :«Patient.NODE»(«Patient.PID»)''')
       cypher('''CREATE INDEX ON :«Series.NODE»(«Series.MODALITY»)''')
+      
+      cypher('''CREATE INDEX ON :«Log.NODE»(«Log.TYPE», «Log.CLASS», «Log.STAMP»)''')
+      cypher('''CREATE INDEX ON :«Key.NODE»(«Key.GROUP», «Key.KEY»)''')
     ]
     
     TARGET = new Target(db)
@@ -97,5 +59,10 @@ class Store {
     ITEM = new Item(db)
     PULL = new Pull(db)
     PUSH = new Push(db)
+    
+    LOG = new Log(db)
+    KEY = new Key(db)
+    
+    KEY.setupDefault
   }
 }

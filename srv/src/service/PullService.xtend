@@ -137,48 +137,21 @@ class PullService {
   val Store store
   val DLocal local
   
-  //TODO: move this to a DB config. Load on PullService instantiation.
-  val cachePath = "./data/cache"
-  
-  //TODO: move this to a DB config. Load on PullService instantiation.
-  val whiteList = #{
-    Tag.SOPClassUID,
-    
-    Tag.PatientOrientation,
-    
-    Tag.StudyDate,
-    Tag.StudyTime,
-    
-    Tag.SeriesNumber,
-    Tag.Modality,
-    
-    Tag.InstanceNumber,
-    Tag.AcquisitionNumber,
-    Tag.ContentDate,
-    Tag.ContentTime,
-    Tag.Laterality,
-    
-    Tag.PixelData,
-    Tag.Columns,
-    Tag.Rows,
-    Tag.BitsAllocated,
-    Tag.BitsStored,
-    Tag.HighBit,
-    Tag.PixelRepresentation,
-    Tag.SamplesPerPixel,
-    Tag.PhotometricInterpretation,
-    Tag.PlanarConfiguration
-  }
+  val String cachePath
+  val Set<Integer> whiteList
   
   new(Store store, String localAET, String localIP) {
     this.store = store
+    this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
+    this.whiteList = store.KEY.get(Set, "dicom", "white-list")
+    
     this.local = new DLocal(localAET, localIP, 1104)[
       val seriesUID = get(DSeries.UID)
       
       val seriesID = store.SERIES.exist(seriesUID)
       if (seriesID === null) {
         // if this is executed, it's probably a bug on the PACS server!
-        store.error(PullService, "Trying to store a non requested seriesUID: " + seriesUID)
+        store.LOG.error(PullService, "Trying to store a non requested seriesUID: " + seriesUID)
         return
       }
       
@@ -212,7 +185,7 @@ class PullService {
         
         store.ITEM.create(seriesID, imageUID, imageSeq, imageDT)
       } catch (Throwable ex) {
-        store.exception(PullService, ex)
+        store.LOG.exception(PullService, ex)
       }
     ]
   }
@@ -339,7 +312,7 @@ class PullService {
         
         store.PULL.status(requestID, Pull.Status.READY)
       } catch (Throwable ex) {
-        store.exception(PullService, ex)
+        store.LOG.exception(PullService, ex)
         store.PULL.error(requestID, ex.message)
       }
     ]
@@ -380,7 +353,7 @@ class PullService {
                 store.SERIES.status(seriesID, Series.Status.READY)
               }
               case DPull.Status.ERROR: {
-                store.error(PullService, "Series status error series: " + seriesUID)
+                store.LOG.error(PullService, "Series status error series: " + seriesUID)
                 store.SERIES.error(seriesID, "DICOM error code: " + dicomErrorCode)
               }
             }
@@ -392,7 +365,7 @@ class PullService {
       store.PULL.status(requestID, Pull.Status.END)
       con.close
     } catch (Throwable ex) {
-      store.exception(PullService, ex)
+      store.LOG.exception(PullService, ex)
       store.PULL.error(pullID, ex.message)
       store.PULL.updateStatusOnPullTries(requestID)
     }

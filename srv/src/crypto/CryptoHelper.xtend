@@ -11,7 +11,7 @@ class CryptoHelper {
   val String spec
   val SecretKeySpec sKeySpec
   
-  new(byte[] key) { this("AES/GCM/PKCS7PADDING", key) }
+  new(byte[] key) { this("AES/CBC/PKCS7PADDING", key) }
   new(String spec, byte[] key) {
     this.spec = spec
     this.sKeySpec = new SecretKeySpec(key, "AES")

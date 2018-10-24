@@ -1,9 +1,10 @@
 plugins {
   id 'java'
+  id 'maven'
   id 'org.xtext.xtend' version '1.0.19'
 }
 
-group 'pt.ua.ieeta'
+group 'pt.ieeta'
 version '0.1.0'
 
 sourceCompatibility = 1.8
@@ -24,7 +25,7 @@ dependencies {
   compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
   compile 'ch.qos.logback:logback-classic:1.2.+' // 1.2.3
   
-  compile 'info.picocli:picocli:1.+' // 1.0.1
+  compile 'info.picocli:picocli:3.+' // 3.7.0
   compile 'org.bouncycastle:bcprov-jdk15on:1.6'
   
   compile 'dcm4che:dcm4che-imageio:2.+' // 2.0.29
@@ -36,9 +37,6 @@ dependencies {
   //compile ('io.javalin:javalin:2.+') { //  2.3.0
   //  exclude group: 'org.eclipse.jetty.websocket'
   //}
-
-
-  
 }
 
 jar {
@@ -46,7 +44,7 @@ jar {
     attributes 'Implementation-Title': project.name,
       'Implementation-Version': version, 
       'Built-By': 'micaelpedrosa@gmail.com',
-      'Main-Class': 'Server',
+      'Main-Class': 'CadProxyCLI',
       'Class-Path': configurations.compile.collect { 'deps/' + it.getName() }.join(' ')
   }
 }

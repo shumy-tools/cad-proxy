@@ -8,16 +8,14 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 
+// TODO: the TransmitStream must be rewrite to handle transmission and big file sizes, i.e. the count var is only an int!
 @FinalFieldsConstructor
 class TransmitStream extends ByteArrayOutputStream {
   val OutputStream os
   
   override close() throws IOException {
-    //TODO: replace the test code with data transmission: (Encrypt-then-MAC, Channel-Transmit)
-    
     os.write(buf, 0, count)
     os.close
-    println("CLOSE-STREAM")
   }
 }
 

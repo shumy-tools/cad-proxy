@@ -21,8 +21,16 @@ skinparam class {
   FontStyle bold
 }
 
+class Log {
+  type: str
+  class: str
+  stamp: dt
+  ..
+  msg: str
+  stack: str
+}
 
-class Keys {
+class Key {
   active: bool
   group: str
   key: str
