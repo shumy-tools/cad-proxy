@@ -31,8 +31,6 @@ dependencies {
   compile 'dcm4che:dcm4che-imageio:2.+' // 2.0.29
   compile 'dcm4che:dcm4che-net:2.+' // 2.0.29
   compile 'org.neo4j:neo4j:3.4.+' // 3.4.9
-
-  //compile 'com.google.code.gson:gson:2.+'
   
   //compile ('io.javalin:javalin:2.+') { //  2.3.0
   //  exclude group: 'org.eclipse.jetty.websocket'
@@ -45,11 +43,19 @@ jar {
       'Implementation-Version': version, 
       'Built-By': 'micaelpedrosa@gmail.com',
       'Main-Class': 'CadProxyCLI',
-      'Class-Path': configurations.compile.collect { 'deps/' + it.getName() }.join(' ')
+      'Class-Path': configurations.runtime.resolvedConfiguration.resolvedArtifacts.collect {
+        def group = it.id.componentIdentifier.group
+        "deps/$group/" + it.file.name
+      }.join(' ')
   }
 }
 
 task deps(type: Copy) {
-  into "$buildDir/libs/deps"
-  from configurations.runtime
+  configurations.runtime.resolvedConfiguration.resolvedArtifacts.each { dep ->
+    def group = dep.id.componentIdentifier.group
+    copy {
+      from dep.file
+      into "$buildDir/libs/deps/$group"
+    }
+  }
 }
