@@ -145,7 +145,9 @@ class PullService {
     this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
     this.whiteList = store.KEY.get(Set, "dicom", "white-list")
     
-    this.local = new DLocal(localAET, localIP, 1104)[
+    val localPort = store.KEY.get(Integer, "port", "local-aet")
+    
+    this.local = new DLocal(localAET, localIP, localPort)[
       val seriesUID = get(DSeries.UID)
       
       val seriesID = store.SERIES.exist(seriesUID)

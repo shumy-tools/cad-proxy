@@ -1,6 +1,8 @@
 package dicom
 
+import base.SecurityPolicy
 import dicom.model.DResult
+import java.net.SocketPermission
 import java.util.ArrayList
 import org.dcm4che2.net.Device
 import org.dcm4che2.net.NetworkApplicationEntity
@@ -25,6 +27,9 @@ class DLocal {
   
   new(String localAet, String localHost, Integer localPort, (DResult) => void onStore) {
     this.aet = localAet
+    
+    SecurityPolicy.CURRENT
+      .addPermission("dcm4che", new SocketPermission("*:" + localPort, "listen,resolve"))
     
     con => [
       hostname = localHost

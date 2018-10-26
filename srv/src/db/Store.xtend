@@ -1,7 +1,9 @@
 package db
 
-import db.mng.Log
+import base.SecurityPolicy
 import db.mng.Key
+import db.mng.Log
+import java.io.FilePermission
 import java.util.Map
 
 class Store {
@@ -22,6 +24,10 @@ class Store {
   
   static def Store setup() {
     val dbPath = System.getProperty("dbPath")
+    
+    SecurityPolicy.CURRENT
+      .addPermission("org.neo4j", new FilePermission(dbPath + "/-", "read,write,delete"))
+    
     return new Store(new NeoDB(dbPath))
   }
   

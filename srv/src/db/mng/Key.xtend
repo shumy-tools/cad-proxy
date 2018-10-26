@@ -21,6 +21,7 @@ class Key {
   
   def setupDefault() {
     create("path", "cache", "/cache")
+    create("port", "local-aet", 1104)
     
     create("dicom", "white-list", #{
       Tag.SOPClassUID,
@@ -97,6 +98,15 @@ class Key {
       throw new RuntimeException('''Incorrect type for (type, group, key)=(«value.class.simpleName», «group», «key»). Requested type «type.simpleName»''')
     
     return value as T
+  }
+  
+  def all() {
+    db.cypher('''MATCH (n:«NODE») RETURN
+      n.«ACTIVE» as «ACTIVE»,
+      n.«GROUP» as «GROUP»,
+      n.«KEY» as «KEY»,
+      n.«VALUE» as «VALUE»
+    ''')
   }
   
   private def Object tryConvert(Object value, Class<?> toType) {

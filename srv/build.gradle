@@ -44,18 +44,18 @@ jar {
       'Built-By': 'micaelpedrosa@gmail.com',
       'Main-Class': 'CadProxyCLI',
       'Class-Path': configurations.runtime.resolvedConfiguration.resolvedArtifacts.collect {
-        def group = it.id.componentIdentifier.group
-        "deps/$group/" + it.file.name
+        def gid = it.id.componentIdentifier.group
+        "deps/$gid/" + it.file.name
       }.join(' ')
   }
 }
 
 task deps(type: Copy) {
   configurations.runtime.resolvedConfiguration.resolvedArtifacts.each { dep ->
-    def group = dep.id.componentIdentifier.group
+    def gid = dep.id.componentIdentifier.group
     copy {
       from dep.file
-      into "$buildDir/libs/deps/$group"
+      into "$buildDir/libs/deps/$gid"
     }
   }
 }

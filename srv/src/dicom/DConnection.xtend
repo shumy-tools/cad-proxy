@@ -1,17 +1,22 @@
 package dicom
 
+import base.SecurityPolicy
 import dicom.model.DField
+import dicom.model.DPatient
 import dicom.model.DQuery
 import dicom.model.DResult
-import dicom.model.DStudy
 import dicom.model.DSeries
-import dicom.model.DPatient
+import dicom.model.DStudy
+import java.net.SocketPermission
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.ArrayList
 import java.util.List
 import org.dcm4che2.data.BasicDicomObject
 import org.dcm4che2.data.DicomObject
 import org.dcm4che2.data.Tag
 import org.dcm4che2.data.UID
+import org.dcm4che2.data.VR
 import org.dcm4che2.net.Association
 import org.dcm4che2.net.CommandUtils
 import org.dcm4che2.net.DimseRSPHandler
@@ -20,9 +25,6 @@ import org.dcm4che2.net.NetworkConnection
 import org.dcm4che2.net.NewThreadExecutor
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
-import java.time.format.DateTimeFormatter
-import java.time.LocalDate
-import org.dcm4che2.data.VR
 
 class DConnection {
   static val log = LoggerFactory.getLogger(DConnection)
@@ -39,6 +41,10 @@ class DConnection {
   new(DLocal local, String remoteAet, String remoteHost, Integer remotePort) {
     this.local = local
     this.aet = remoteAet
+    
+    SecurityPolicy.CURRENT
+      .addPermission("dcm4che", new SocketPermission(remoteHost + ":" + remotePort, "connect,resolve"))
+      .addPermission("dcm4che", new SocketPermission("0.0.0.0:" + remotePort, "connect,resolve"))
     
     con => [
       hostname = remoteHost

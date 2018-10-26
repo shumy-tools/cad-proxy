@@ -1,0 +1,9 @@
+grant codeBase "file:${{java.ext.dirs}}/*" {
+  permission java.security.AllPermission;
+};
+
+grant codeBase "file:./build/libs/*" {
+  permission java.security.AllPermission;
+};
+
+// all other policies are defined programmatically in base.SecurityPolicy class

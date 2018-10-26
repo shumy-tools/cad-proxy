@@ -4,6 +4,7 @@
 .gradle
 .flattened-pom.xml
 *.log
+*.jar
 
 .settings/
 
