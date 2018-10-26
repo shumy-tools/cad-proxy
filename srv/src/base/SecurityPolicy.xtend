@@ -20,27 +20,7 @@ class SecurityPolicy extends Policy {
   ]
   
   static val global = #[
-    new PropertyPermission("user.dir", "read"),
-    
-    new PropertyPermission("os.name", "read"),
-    new PropertyPermission("os.version", "read"),
-    new PropertyPermission("os.arch", "read"),
-    
-    new PropertyPermission("file.separator", "read"),
-    new PropertyPermission("path.separator", "read"),
-    new PropertyPermission("line.separator", "read"),
-    
-    new PropertyPermission("java.version", "read"),
-    new PropertyPermission("java.vendor", "read"),
-    new PropertyPermission("java.vendor.url", "read"),
-    new PropertyPermission("java.class.version", "read"),
-    
-    new PropertyPermission("java.vm.specification.version", "read"),
-    new PropertyPermission("java.vm.specification.vendor", "read"),
-    new PropertyPermission("java.vm.specification.name", "read"),
-    new PropertyPermission("java.vm.version", "read"),
-    new PropertyPermission("java.vm.vendor", "read"),
-    new PropertyPermission("java.vm.name", "read")
+    new PropertyPermission("*", "read")
   ]
   
   // adding policies: use the same order as in the gradle file
@@ -52,7 +32,6 @@ class SecurityPolicy extends Policy {
   
   static val ch_qos_logback = new Permissions => [
     addGlobal
-    add = new PropertyPermission("*", "read")
     add = new FilePermission("logback.xml","read")
     
     add = new RuntimePermission("getClassLoader")
@@ -61,7 +40,6 @@ class SecurityPolicy extends Policy {
   
   static val info_picocli = new Permissions => [
     addGlobal
-    add = new PropertyPermission("picocli.*", "read")
     
     add = new RuntimePermission("getenv.TERM")
     add = new RuntimePermission("getenv.OSTYPE")
@@ -74,8 +52,6 @@ class SecurityPolicy extends Policy {
   
   static val org_bouncycastle = new Permissions => [
     addGlobal
-    add = new PropertyPermission("org.bouncycastle.ec.disable_mqv", "read")
-    
     add = new RuntimePermission("accessClassInPackage.sun.security.provider")
     
     add = new SecurityPermission("putProviderProperty.BC")
@@ -116,7 +92,6 @@ class SecurityPolicy extends Policy {
   // transitive
   static val org_slf4j = new Permissions => [
     addGlobal
-    add = new PropertyPermission("*", "read")
     add = new FilePermission("logback.xml","read")
     add = new FilePermission("/home/micael/git/cad-proxy/srv/build/libs/deps/ch.qos.logback/logback-classic-1.2.3.jar", "read")
     

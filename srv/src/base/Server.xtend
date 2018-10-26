@@ -129,11 +129,6 @@ class Server {
   static def void testPull() {
     val store = Store.setup
     
-    println("KEYS: ")
-    store.KEY.all.forEach[
-      println(it)
-    ]
-    
     /*println("Last Logs: ")
     store.logs.forEach[
       println(it)

@@ -12,7 +12,7 @@ import java.util.Collection
 @FinalFieldsConstructor
 class Key {
   val NeoDB db
-  public static val NODE = Log.simpleName
+  public static val NODE = Key.simpleName
   
   public static val ACTIVE              = "active"
   public static val GROUP               = "group"
