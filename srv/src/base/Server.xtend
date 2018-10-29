@@ -3,20 +3,56 @@ package base
 import db.Pull
 import db.Store
 import dicom.DLocal
+import dicom.DConnection
 import dicom.model.DImage
 import dicom.model.DPatient
 import dicom.model.DQuery
 import dicom.model.DSeries
 import dicom.model.DStudy
+import dicom.model.DResult
+
 import java.util.List
 import java.util.Map
 import java.util.UUID
 import service.PullService
 import service.PushService
 import service.TransmitService
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class Server {
-  static def run() {
+  static val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+  
+  val Store store
+  val TransmitService transSrv 
+  
+  val PullService pullSrv
+  val PushService pushSrv
+  
+  new() {this(null)}
+  new(String ethName) {
+    this.store = Store.setup
+    this.transSrv = new TransmitService
+    
+    if(ethName !== null)
+      store.KEY.set("local-aet", "eth-name", ethName) 
+    
+    this.pullSrv = new PullService(store)
+    this.pushSrv = new PushService(store, transSrv)
+  }
+  
+  def run() {
+    
+  }
+  
+  def List<DResult> findDayStudies(DConnection con, LocalDate date) {
+    val day = date.format(formatter)
+    con.find(new DQuery(DStudy.RL) => [set(DStudy.DATE, day)],
+      DPatient.ID, DStudy.UID, DStudy.DATE
+    )
+  }
+  
+  static def void test() {
     //System.securityManager.
     
     /*Security.addProvider(new BouncyCastleProvider)
@@ -72,7 +108,7 @@ class Server {
   
   static def void testFind() {
     val store = Store.setup
-    val pullSrv = new PullService(store, "MICAEL", "192.168.21.250")
+    val pullSrv = new PullService(store)
     
     val query = new DQuery => [set(DStudy.DATE, "20170130")]
     println(pullSrv.find(query))
@@ -141,7 +177,7 @@ class Server {
     store.cypher("MATCH (n:Series) DETACH DELETE n")
     store.cypher("MATCH (n:Item) DETACH DELETE n")
     
-    val pullSrv = new PullService(store, "MICAEL", "192.168.21.250")
+    val pullSrv = new PullService(store)
     val result = pullSrv.find(new DQuery => [set(DStudy.DATE, "20170130")])
     
     pullSrv.pullRequests(result).forEach[

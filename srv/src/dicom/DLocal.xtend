@@ -29,7 +29,9 @@ class DLocal {
     this.aet = localAet
     
     SecurityPolicy.CURRENT
+      .addPermission("dcm4che", new SocketPermission(localHost + ":" + localPort, "listen,resolve"))
       .addPermission("dcm4che", new SocketPermission("*:" + localPort, "listen,resolve"))
+      .addPermission("dcm4che", new SocketPermission("*:0", "accept,resolve"))
     
     con => [
       hostname = localHost

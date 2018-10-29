@@ -28,7 +28,7 @@ class Log {
     
     val map = #{ CLASS -> clazz.name, STAMP -> LocalDateTime.now, MSG -> ex.message, STACK -> stack.toString }
     db.cypher('''
-      CREATE (n:Log {
+      CREATE (n:«NODE» {
         «TYPE»: "«Type.EXCEPTION»",
         «CLASS»: $«CLASS»,
         «STAMP»: $«STAMP»,
@@ -42,8 +42,8 @@ class Log {
     logger.error(msg)
     val map = #{ CLASS -> clazz.name, STAMP -> LocalDateTime.now, MSG -> msg }
     db.cypher('''
-      CREATE (n:Log {
-        «TYPE»: ""«Type.ERROR»",
+      CREATE (n:«NODE» {
+        «TYPE»: "«Type.ERROR»",
         «CLASS»: $«CLASS»,
         «STAMP»: $«STAMP»,
         «MSG»: $«MSG»

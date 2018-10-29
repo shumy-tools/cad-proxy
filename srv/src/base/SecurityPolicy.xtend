@@ -20,7 +20,8 @@ class SecurityPolicy extends Policy {
   ]
   
   static val global = #[
-    new PropertyPermission("*", "read")
+    new PropertyPermission("*", "read"),
+    new SocketPermission("localhost:0", "listen")
   ]
   
   // adding policies: use the same order as in the gradle file
@@ -64,7 +65,7 @@ class SecurityPolicy extends Policy {
   
   static val org_neo4j = new Permissions => [
     addGlobal
-    add = new PropertyPermission("*", "read,write")
+    /*add = new PropertyPermission("*", "read,write")
     
     add = new RuntimePermission("getClassLoader")
     add = new RuntimePermission("accessClassInPackage.sun.misc")
@@ -85,6 +86,7 @@ class SecurityPolicy extends Policy {
     
     add = new SocketPermission("127.0.0.1", "resolve")
     add = new SocketPermission("[0:0:0:0:0:0:0:1%lo]", "resolve")
+    */
     
     add = new AllPermission
   ]
@@ -93,9 +95,9 @@ class SecurityPolicy extends Policy {
   static val org_slf4j = new Permissions => [
     addGlobal
     add = new FilePermission("logback.xml","read")
-    add = new FilePermission("/home/micael/git/cad-proxy/srv/build/libs/deps/ch.qos.logback/logback-classic-1.2.3.jar", "read")
+    //add = new FilePermission("/home/micael/git/cad-proxy/srv/build/libs/deps/ch.qos.logback/logback-classic-1.2.3.jar", "read")
     
-    //add = new AllPermission //*
+    add = new AllPermission //*
   ]
   
   static val io_netty = new Permissions => [

@@ -21,7 +21,10 @@ class Key {
   
   def setupDefault() {
     create("path", "cache", "/cache")
-    create("port", "local-aet", 1104)
+    
+    create("local-aet", "aet", "CAD-PROXY")
+    create("local-aet", "eth-name", "lo")
+    create("local-aet", "port", 1104)
     
     create("dicom", "white-list", #{
       Tag.SOPClassUID,
@@ -81,7 +84,7 @@ class Key {
     res.head.get("id") as Long
   }
   
-  def <T> get(Class<T> type, String group, String key) {
+  def <T> getOrDefault(Class<T> type, String group, String key, T defValue) {
     val map = #{ GROUP -> group, KEY -> key }
     val res = db.cypher('''
       MATCH (n:«NODE» {«GROUP»: $«GROUP», «KEY»: $«KEY»})
@@ -91,13 +94,22 @@ class Key {
     ''', map)
     
     if (res.empty)
-      throw new RuntimeException('''Unable to find (group, key)=(«group», «key»)''')
+      return defValue
     
     val value = tryConvert(res.head.get(VALUE), type)
     if (!type.isAssignableFrom(value.class))
       throw new RuntimeException('''Incorrect type for (type, group, key)=(«value.class.simpleName», «group», «key»). Requested type «type.simpleName»''')
     
     return value as T
+  }
+  
+  def <T> get(Class<T> type, String group, String key) {
+    val value = getOrDefault(type, group, key, null)
+    
+    if (value === null)
+      throw new RuntimeException('''Unable to find (group, key)=(«group», «key»)''')
+    
+    return value
   }
   
   def all() {

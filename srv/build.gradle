@@ -1,7 +1,7 @@
 plugins {
   id 'java'
   id 'maven'
-  id 'org.xtext.xtend' version '1.0.19'
+  id 'org.xtext.xtend' version '2.0.1' // https://xtext.github.io/xtext-gradle-plugin/xtend.html
 }
 
 group 'pt.ieeta'
@@ -22,7 +22,7 @@ sourceSets {
 }
 
 dependencies {
-  compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
+  compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.15.0'
   compile 'ch.qos.logback:logback-classic:1.2.+' // 1.2.3
   
   compile 'info.picocli:picocli:3.+' // 3.7.0

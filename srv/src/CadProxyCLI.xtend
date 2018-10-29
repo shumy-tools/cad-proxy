@@ -22,6 +22,9 @@ class RCommand {
   
   @Option(names = #["-s", "--server"], help = true, description = "Run the server.")
   public boolean server
+  
+  @Option(names = #["--eth"], help = true, description = "Ethernet interface to use for the local DICOM storage service.")
+  public String ethName
 }
 
 class CadProxyCLI {
@@ -57,7 +60,7 @@ class CadProxyCLI {
       }
       
       if (cmd.server) {
-        base.Server.run
+        new base.Server(cmd.ethName).run
         return
       }
     } catch (Throwable ex) {

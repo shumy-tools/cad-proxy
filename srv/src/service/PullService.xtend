@@ -11,10 +11,12 @@ import dicom.model.DQuery
 import dicom.model.DResult
 import dicom.model.DSeries
 import dicom.model.DStudy
+import java.net.NetworkInterface
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.Collections
 import java.util.HashMap
 import java.util.HashSet
 import java.util.List
@@ -140,14 +142,24 @@ class PullService {
   val String cachePath
   val Set<Integer> whiteList
   
-  new(Store store, String localAET, String localIP) {
+  new(Store store) {
     this.store = store
     this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
     this.whiteList = store.KEY.get(Set, "dicom", "white-list")
     
-    val localPort = store.KEY.get(Integer, "port", "local-aet")
+    val localAET = store.KEY.get(String, "local-aet", "aet")
+    val localEthName = store.KEY.get(String, "local-aet", "eth-name")
+    val localPort = store.KEY.get(Integer, "local-aet", "port")
     
-    this.local = new DLocal(localAET, localIP, localPort)[
+    logger.info("Using inet interface: {}", localEthName)
+    val localInet = Collections.list(NetworkInterface.getByName(localEthName).inetAddresses).filter[
+      siteLocalAddress && isReachable(100)
+    ].head
+    
+    if (localInet === null)
+      throw new RuntimeException("No suitable address found for interface: " + localEthName)
+    
+    this.local = new DLocal(localAET, localInet.hostAddress, localPort)[
       val seriesUID = get(DSeries.UID)
       
       val seriesID = store.SERIES.exist(seriesUID)
