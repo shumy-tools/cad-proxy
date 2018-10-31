@@ -1,10 +1,15 @@
+import base.SecurityPolicy
+import base.Server
+import db.Store
+import db.mng.Key
+import java.io.File
+import java.security.Policy
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
-import java.security.Policy
-import java.io.File
-import org.slf4j.LoggerFactory
+
+import static java.security.Policy.*
 
 @Command(
   name = "cadp", footer = "Copyright(c) 2017",
@@ -23,13 +28,16 @@ class RCommand {
   @Option(names = #["-s", "--server"], help = true, description = "Run the server.")
   public boolean server
   
+  @Option(names = #["--key-list"], help = true, description = "List all configuration keys. Order by group.")
+  public boolean keyList
+  
   @Option(names = #["--eth"], help = true, description = "Ethernet interface to use for the local DICOM storage service.")
   public String ethName
 }
 
 class CadProxyCLI {
   def static void main(String[] args) {
-    Policy.policy = base.SecurityPolicy.CURRENT
+    Policy.policy = SecurityPolicy.CURRENT
     
     val cmd =  try {
       CommandLine.populateCommand(new RCommand, args)
@@ -48,19 +56,19 @@ class CadProxyCLI {
     System.setProperty("dataPath", dataPath)
     System.setProperty("dbPath", dbPath)
     
-    //NetworkInterface.getInetAddresses
-    
-    // /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/ext:/usr/java/packages/lib/ext
-    LoggerFactory.getLogger("TEST").info("TEST")
-    
     try {
       if (cmd.help) {
         CommandLine.usage(cmd, System.out)
         return
       }
       
+      if (cmd.keyList) {
+        keyList
+        return
+      }
+      
       if (cmd.server) {
-        new base.Server(cmd.ethName).run
+        new Server(cmd.ethName).run
         return
       }
     } catch (Throwable ex) {
@@ -69,5 +77,12 @@ class CadProxyCLI {
       else
         println(ex.message)
     }
+  }
+  
+  def static void keyList() {
+    val store = Store.setup
+    store.KEY.all.forEach[
+      println('''(«Key.GROUP»=«get(Key.GROUP)», «Key.KEY»=«get(Key.KEY)», «Key.VALUE»=«get(Key.VALUE)»), «Key.ACTIVE»=«get(Key.ACTIVE)»)''')
+    ]
   }
 }

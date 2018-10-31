@@ -157,7 +157,7 @@ class PullService {
     ].head
     
     if (localInet === null)
-      throw new RuntimeException("No suitable address found for interface: " + localEthName)
+      throw new RuntimeException("No suitable address found for the interface: " + localEthName)
     
     this.local = new DLocal(localAET, localInet.hostAddress, localPort)[
       val seriesUID = get(DSeries.UID)

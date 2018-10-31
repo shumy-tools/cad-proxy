@@ -22,7 +22,7 @@ class DLocal {
   val conns = new ArrayList<DConnection>
   
   new(String localAet, Integer localPort, (DResult) => void onStore) {
-    this(localAet, "localhost", localPort, onStore)
+    this(localAet, "127.0.0.1", localPort, onStore)
   }
   
   new(String localAet, String localHost, Integer localPort, (DResult) => void onStore) {

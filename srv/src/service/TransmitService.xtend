@@ -20,7 +20,7 @@ class TransmitStream extends ByteArrayOutputStream {
 }
 
 class TransmitService {
-  def OutputStream push(String targetUDI, Long pushID) {
+  def OutputStream streamFor(String targetUDI, Long pushID) {
     val path = "./data/target/" + targetUDI
     
     val dir = Paths.get(path)

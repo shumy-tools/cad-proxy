@@ -3,24 +3,26 @@ package base
 import db.Pull
 import db.Store
 import dicom.DLocal
-import dicom.DConnection
 import dicom.model.DImage
 import dicom.model.DPatient
 import dicom.model.DQuery
 import dicom.model.DSeries
 import dicom.model.DStudy
-import dicom.model.DResult
-
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.List
 import java.util.Map
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import org.slf4j.LoggerFactory
 import service.PullService
 import service.PushService
 import service.TransmitService
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.util.HashSet
 
 class Server {
+  static val logger = LoggerFactory.getLogger(Server)
   static val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
   
   val Store store
@@ -42,14 +44,50 @@ class Server {
   }
   
   def run() {
+    val pullInterval = store.KEY.get(Integer, "pull", "interval")
+    val pushInterval = store.KEY.get(Integer, "push", "interval")
     
+    // TODO: set initialDelay to synchronize with a certain day time?
+    
+    Executors.newScheduledThreadPool(1) => [
+      scheduleAtFixedRate([this.pullTask], 0, pullInterval, TimeUnit.HOURS)
+      Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
+    ]
+    
+    Executors.newScheduledThreadPool(1) => [
+      scheduleAtFixedRate([this.pushTask], 0, pushInterval, TimeUnit.HOURS)
+      Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
+    ]
+    
+    // TODO: setup REST services?
   }
   
-  def List<DResult> findDayStudies(DConnection con, LocalDate date) {
-    val day = date.format(formatter)
-    con.find(new DQuery(DStudy.RL) => [set(DStudy.DATE, day)],
-      DPatient.ID, DStudy.UID, DStudy.DATE
-    )
+  def void pullTask() {
+    val day = LocalDate.now.format(formatter)
+    logger.info("Starting scheduled pull-task. Pulling day: {}", day)
+    
+    //TODO: is there any pull-requests pending?
+    val pendingRequests = new HashSet<Long>
+    
+    
+    val query = new DQuery => [set(DStudy.DATE, day)]
+    val result = pullSrv.find(query)
+    
+    pendingRequests.addAll(pullSrv.pullRequests(result))
+    val pulls = pendingRequests.map[pullSrv.pull(it)].toSet
+  }
+  
+  def void pushTask() {
+    logger.info("Starting scheduled push-task.")
+    
+    //TODO: is there any push-requests pending?
+    val pendingRequests = new HashSet<Long>
+    
+    
+    pendingRequests.addAll(pushSrv.pushRequests)
+    pendingRequests.forEach[
+      pushSrv.push(it)
+    ]
   }
   
   static def void test() {

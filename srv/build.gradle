@@ -1,7 +1,7 @@
 plugins {
   id 'java'
   id 'maven'
-  id 'org.xtext.xtend' version '2.0.1' // https://xtext.github.io/xtext-gradle-plugin/xtend.html
+  id 'org.xtext.xtend' version '2.0.2' // https://xtext.github.io/xtext-gradle-plugin/xtend.html
 }
 
 group 'pt.ieeta'

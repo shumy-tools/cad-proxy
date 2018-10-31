@@ -22,6 +22,10 @@ class Key {
   def setupDefault() {
     create("path", "cache", "/cache")
     
+    create("pull", "interval", 3) // 3 hours interval
+    
+    create("push", "interval", 3) // 3 hours interval
+    
     create("local-aet", "aet", "CAD-PROXY")
     create("local-aet", "eth-name", "lo")
     create("local-aet", "port", 1104)
@@ -96,7 +100,11 @@ class Key {
     if (res.empty)
       return defValue
     
-    val value = tryConvert(res.head.get(VALUE), type)
+    val keyNode = res.head
+    if (!keyNode.get(ACTIVE) as Boolean)
+      throw new RuntimeException('''The (group, key)=(«group», «key») is not active.''')
+    
+    val value = tryConvert(keyNode, type)
     if (!type.isAssignableFrom(value.class))
       throw new RuntimeException('''Incorrect type for (type, group, key)=(«value.class.simpleName», «group», «key»). Requested type «type.simpleName»''')
     
@@ -108,16 +116,18 @@ class Key {
     
     if (value === null)
       throw new RuntimeException('''Unable to find (group, key)=(«group», «key»)''')
-    
+      
     return value
   }
   
   def all() {
-    db.cypher('''MATCH (n:«NODE») RETURN
-      n.«ACTIVE» as «ACTIVE»,
-      n.«GROUP» as «GROUP»,
-      n.«KEY» as «KEY»,
-      n.«VALUE» as «VALUE»
+    db.cypher('''MATCH (n:«NODE»)
+      RETURN
+        n.«ACTIVE» as «ACTIVE»,
+        n.«GROUP» as «GROUP»,
+        n.«KEY» as «KEY»,
+        n.«VALUE» as «VALUE»
+      ORDER BY «GROUP», «KEY»
     ''')
   }
   

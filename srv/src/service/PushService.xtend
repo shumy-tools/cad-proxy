@@ -58,7 +58,7 @@ class PushService {
     
     // zip files for each subject
     val buffer = newByteArrayOfSize(1024*1024)
-    val os = transmit.push(targetUDI, pushID)
+    val os = transmit.streamFor(targetUDI, pushID)
     val zipFile = new ZipOutputStream(os) => [
       //TODO: compression should depend of the DICOM raw data type. i.e. if already compressed the level should be BEST_SPEED
       level = Deflater.BEST_SPEED
