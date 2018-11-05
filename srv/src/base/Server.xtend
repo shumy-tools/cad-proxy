@@ -64,29 +64,25 @@ class Server {
   
   def void pullTask() {
     val day = LocalDate.now.format(formatter)
-    logger.info("Starting scheduled pull-task. Pulling day: {}", day)
-    
-    //TODO: is there any pull-requests pending?
-    val pendingRequests = new HashSet<Long>
-    
+    logger.info("Starting scheduled pull-tasks. Pulling day: {}", day)
     
     val query = new DQuery => [set(DStudy.DATE, day)]
     val result = pullSrv.find(query)
     
-    pendingRequests.addAll(pullSrv.pullRequests(result))
-    val pulls = pendingRequests.map[pullSrv.pull(it)].toSet
+    new HashSet<Long> => [
+      addAll(store.PULL.pending)
+      addAll(pullSrv.pullRequests(result))
+      forEach[pullSrv.pull(it)]
+    ]
   }
   
   def void pushTask() {
-    logger.info("Starting scheduled push-task.")
+    logger.info("Starting scheduled push-tasks.")
     
-    //TODO: is there any push-requests pending?
-    val pendingRequests = new HashSet<Long>
-    
-    
-    pendingRequests.addAll(pushSrv.pushRequests)
-    pendingRequests.forEach[
-      pushSrv.push(it)
+    new HashSet<Long> => [
+      addAll(store.PUSH.pending)
+      addAll(pushSrv.pushRequests)
+      forEach[pushSrv.push(it)]
     ]
   }
   

@@ -11,3 +11,6 @@
 bin/
 data/
 build/
+dist/
+release/
+node_modules/

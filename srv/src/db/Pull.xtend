@@ -2,6 +2,7 @@ package db
 
 import java.time.LocalDateTime
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import java.util.Set
 
 @FinalFieldsConstructor
 class Pull {
@@ -107,6 +108,16 @@ class Pull {
       MATCH (n:«NODE») WHERE id(n) = «pullID»
       SET n.«STATUS» = "«Status.ERROR.name»", n.«S_TIME» = $«S_TIME», n.«ERROR» = $«ERROR»
     ''', map)
+  }
+  
+  def Set<Long> pending() {
+    val res = db.cypher('''
+      MATCH (n:«NODE»)
+        WHERE n.«STATUS» = "«Status.READY.name»"
+      RETURN id(n) as id
+    ''')
+    
+    return res.map[get("id") as Long].toSet
   }
   
   def data(Long pullID, Type type) {

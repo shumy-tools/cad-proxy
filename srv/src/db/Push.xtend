@@ -61,6 +61,16 @@ class Push {
     ''', map)
   }
   
+  def Set<Long> pending() {
+    val res = db.cypher('''
+      MATCH (n:«NODE»)
+        WHERE n.«STATUS» = "«Status.START.name»" OR n.«STATUS» = "«Status.RETRY.name»"
+      RETURN id(n) as id
+    ''')
+    
+    return res.map[get("id") as Long].toSet
+  }
+  
   def data(Long pushID) {
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
