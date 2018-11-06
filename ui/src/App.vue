@@ -2,31 +2,121 @@
   <v-app>
     <v-navigation-drawer fixed clipped class="grey lighten-4" app v-model="drawer">
       <v-list dense class="grey lighten-4">
-        <template v-for="(item, i) in items">
-          <v-layout row v-if="item.heading" align-center :key="i">
-            <v-flex xs6>
-              <v-subheader v-if="item.heading" class="title">
-                {{ item.heading }}
-              </v-subheader>
-            </v-flex>
-          </v-layout>
-          <v-divider dark v-else-if="item.divider" class="my-3" :key="i"></v-divider>
-          <v-list-tile :key="i" v-else>
+        
+        <!--Subjects Section-->
+        <v-list-tile>
+          <v-list-tile-action>
+            <v-icon color="primary">fas fa-user</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <router-link tag="button" to="/subjects">Subjects</router-link>
+          </v-list-tile-content>
+        </v-list-tile>
+
+        <v-divider dark class="my-2"></v-divider>
+
+        <!--Sources Section-->
+        <v-layout row align-center>
+          <v-flex xs6>
+            <v-subheader class="title">Sources</v-subheader>
+          </v-flex>
+        </v-layout>
+        
+          <!--Source List-->
+          <v-list-tile v-for="(item, i) in sources" :key="`src-${i}`" class="ml-3">
             <v-list-tile-action>
-              <v-icon>{{ item.icon }}</v-icon>
+              <v-icon small>fas fa-download</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" :to="item.to">{{ item.text }}</router-link>
+              <router-link tag="button" :to="item.to">{{ item.label }}</router-link>
             </v-list-tile-content>
           </v-list-tile>
-        </template>
+
+          <v-list-tile>
+            <v-list-tile-action>
+              <v-icon color="primary">fas fa-plus</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" to="/new-source">New</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
+
+        <!--Targets Section-->
+        <v-layout row align-center>
+          <v-flex xs6>
+            <v-subheader class="title">Targets</v-subheader>
+          </v-flex>
+        </v-layout>
+        
+          <!--Target List-->
+          <v-list-tile v-for="(item, i) in targets" :key="`trg-${i}`" class="ml-3">
+            <v-list-tile-action>
+              <v-icon small>fas fa-upload</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" :to="item.to">{{ item.label }}</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
+
+          <v-list-tile>
+            <v-list-tile-action>
+              <v-icon color="primary">fas fa-plus</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" to="/new-target">New</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
+
+        <v-divider dark class="my-2"></v-divider>
+        
+        <!--Settings Section-->
+        <v-layout row align-center>
+          <v-flex xs6>
+            <v-subheader class="title">Settings</v-subheader>
+          </v-flex>
+        </v-layout>
+
+          <v-list-tile>
+            <v-list-tile-action>
+              <v-icon color="primary">fas fa-cog</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" to="/keys">Keys</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
+
+          <v-list-tile>
+            <v-list-tile-action>
+              <v-icon color="primary">fas fa-user-circle</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" to="/users">Users</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
+
       </v-list>
     </v-navigation-drawer>
 
     <v-toolbar app dense fixed clipped-left class="theme-bg-color">
       <v-toolbar-side-icon @click.native="drawer = !drawer"></v-toolbar-side-icon>
-      <span class="title ml-3 mr-5">CAD-<span class="text">Proxy</span></span>
+      <span class="title ml-2 mr-3">CAD-<span class="text">Proxy</span></span>
+      
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/pull-list" class="no-border-radius">
+          <v-icon>fas fa-download</v-icon>
+        </v-btn>
+        <span>Pull List</span>
+      </v-tooltip>
+
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/push-list" class="no-border-radius">
+          <v-icon>fas fa-upload</v-icon>
+        </v-btn>
+        <span>Push List</span>
+      </v-tooltip>
+      
       <!--<v-text-field solo-inverted flat class="mt-2" label="Search" prepend-icon="fas fa-search"></v-text-field>-->
+      
       <v-spacer></v-spacer>
 
       <v-toolbar-items>
@@ -62,24 +152,20 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 
 @Component
 export default class App extends Vue {
-  drawer = null
-  items = [
-    //{ icon: 'fas fa-bell', text: 'Reminders', to: '/reminders' },
-    
-    { divider: true },
-    { heading: 'Sources' },
-    { icon: 'fas fa-plus', text: 'New Source', to: '/new-source' },
+  drawer = false
 
-    //{ divider: true },
-    { heading: 'Targets' },
-    { icon: 'fas fa-plus', text: 'New Target', to: '/new-target' },
-    
-    { divider: true },
-    { icon: 'fas fa-cog', text: 'Settings', to: '/settings' }
+  sources = [
+    { label: 'Source-X', to: '/source-x' },
+    { label: 'Source-Y', to: '/source-y' }
+  ]
+
+  targets = [
+    { label: 'Target-X', to: '/target-x' },
+    { label: 'Target-Y', to: '/target-y' }
   ]
 }
 </script>

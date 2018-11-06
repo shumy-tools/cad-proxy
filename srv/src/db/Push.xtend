@@ -71,6 +71,22 @@ class Push {
     return res.map[get("id") as Long].toSet
   }
   
+  def page(int skip, int limit) {
+    db.cypher('''
+      MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
+        WITH count(n) as total, {
+          target: t.«Target.NAME»,
+          started: n.«STARTED»,
+          status: n.«STATUS»,
+          stime: n.«S_TIME»,
+          error: n.«ERROR»
+        } as list
+      ORDER BY list.started SKIP «skip» LIMIT «limit»
+      RETURN
+        total, collect(list) as data
+    ''').head
+  }
+  
   def data(Long pushID) {
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)

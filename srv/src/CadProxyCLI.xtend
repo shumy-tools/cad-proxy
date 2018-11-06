@@ -28,6 +28,9 @@ class RCommand {
   @Option(names = #["-s", "--server"], help = true, description = "Run the server.")
   public boolean server
   
+  @Option(names = #["-ns", "--no-schedule"], help = true, description = "Disable pull/push scheduled tasks.")
+  public boolean noSchedule
+  
   @Option(names = #["--key-list"], help = true, description = "List all configuration keys. Order by group.")
   public boolean keyList
   
@@ -68,7 +71,7 @@ class CadProxyCLI {
       }
       
       if (cmd.server) {
-        new Server(cmd.ethName).run
+        new Server(cmd.ethName).run(cmd.noSchedule)
         return
       }
     } catch (Throwable ex) {

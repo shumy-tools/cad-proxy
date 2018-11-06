@@ -120,6 +120,24 @@ class Pull {
     return res.map[get("id") as Long].toSet
   }
   
+  def page(int skip, int limit) {
+    db.cypher('''
+      MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
+        WITH count(n) as total, {
+          source: s.«Source.AET»,
+          started: n.«STARTED»,
+          type: n.«TYPE»,
+          status: n.«STATUS»,
+          stime: n.«S_TIME»,
+          tries: n.«PULL_TRIES»,
+          error: n.«ERROR»
+        } as list
+      ORDER BY list.started SKIP «skip» LIMIT «limit»
+      RETURN
+        total, collect(list) as data
+    ''').head
+  }
+  
   def data(Long pullID, Type type) {
     val res = db.cypher('''
       «IF type == Type.REQ»

@@ -92,8 +92,8 @@ class Key {
     val map = #{ GROUP -> group, KEY -> key }
     val res = db.cypher('''
       MATCH (n:«NODE» {«GROUP»: $«GROUP», «KEY»: $«KEY»})
-        WHERE n.«ACTIVE» = true
       RETURN
+        n.«ACTIVE» as «ACTIVE», 
         n.«VALUE» as «VALUE»
     ''', map)
     
@@ -104,7 +104,7 @@ class Key {
     if (!keyNode.get(ACTIVE) as Boolean)
       throw new RuntimeException('''The (group, key)=(«group», «key») is not active.''')
     
-    val value = tryConvert(keyNode, type)
+    val value = tryConvert(keyNode.get(VALUE), type)
     if (!type.isAssignableFrom(value.class))
       throw new RuntimeException('''Incorrect type for (type, group, key)=(«value.class.simpleName», «group», «key»). Requested type «type.simpleName»''')
     

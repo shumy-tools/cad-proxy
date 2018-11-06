@@ -43,23 +43,26 @@ class Server {
     this.pushSrv = new PushService(store, transSrv)
   }
   
-  def run() {
-    val pullInterval = store.KEY.get(Integer, "pull", "interval")
-    val pushInterval = store.KEY.get(Integer, "push", "interval")
+  def run(boolean noSchedule) {
+    if (!noSchedule) {
+      val pullInterval = store.KEY.get(Integer, "pull", "interval")
+      val pushInterval = store.KEY.get(Integer, "push", "interval")
+      
+      // TODO: set initialDelay to synchronize with a certain day time?
+      
+      Executors.newScheduledThreadPool(1) => [
+        scheduleAtFixedRate([this.pullTask], 0, pullInterval, TimeUnit.HOURS)
+        Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
+      ]
+      
+      Executors.newScheduledThreadPool(1) => [
+        scheduleAtFixedRate([this.pushTask], 0, pushInterval, TimeUnit.HOURS)
+        Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
+      ]  
+    }
     
-    // TODO: set initialDelay to synchronize with a certain day time?
-    
-    Executors.newScheduledThreadPool(1) => [
-      scheduleAtFixedRate([this.pullTask], 0, pullInterval, TimeUnit.HOURS)
-      Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
-    ]
-    
-    Executors.newScheduledThreadPool(1) => [
-      scheduleAtFixedRate([this.pushTask], 0, pushInterval, TimeUnit.HOURS)
-      Runtime.runtime.addShutdownHook(new Thread[shutdownNow])
-    ]
-    
-    // TODO: setup REST services?
+    // setup REST services
+    new WebServer(store).setup
   }
   
   def void pullTask() {

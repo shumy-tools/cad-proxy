@@ -44,7 +44,7 @@ class Pull {
   pull-tries?: int
   ..
   status: enum
-  s-time: int
+  s-time: dt
   error?: str
 }
 note bottom
@@ -98,7 +98,7 @@ class Push {
   started: dt
   ..
   status: enum
-  s-time: int
+  s-time: dt
   error?: str
 }
 note top

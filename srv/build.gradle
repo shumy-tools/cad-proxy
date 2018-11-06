@@ -32,9 +32,11 @@ dependencies {
   compile 'dcm4che:dcm4che-net:2.+' // 2.0.29
   compile 'org.neo4j:neo4j:3.4.+' // 3.4.9
   
-  //compile ('io.javalin:javalin:2.+') { //  2.3.0
-  //  exclude group: 'org.eclipse.jetty.websocket'
-  //}
+  compile 'com.google.code.gson:gson:2.+' // 2.8.5
+  
+  compile ('com.sparkjava:spark-core:2.+') { // 2.8.0
+    exclude group: 'org.slf4j', module: 'slf4j-simple'
+  }
 }
 
 jar {

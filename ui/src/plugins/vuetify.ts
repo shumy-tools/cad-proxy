@@ -15,5 +15,5 @@ Vue.use(Vuetify, {
   directives: {
     Ripple
   },
-  iconfont: 'fa' //'mdi' || 'md' || 'mdi' || 'fa' || 'fa4'
+  iconfont: 'fa' //'md' || 'mdi' || 'fa' || 'fa4'
 })
