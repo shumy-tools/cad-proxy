@@ -123,7 +123,8 @@ class Pull {
   def page(int skip, int limit) {
     db.cypher('''
       MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
-        WITH count(n) as total, {
+        WITH count(DISTINCT n) as total, {
+          id: id(n),
           source: s.«Source.AET»,
           started: n.«STARTED»,
           type: n.«TYPE»,

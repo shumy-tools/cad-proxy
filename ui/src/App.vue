@@ -3,13 +3,13 @@
     <v-navigation-drawer fixed clipped class="grey lighten-4" app v-model="drawer">
       <v-list dense class="grey lighten-4">
         
-        <!--Subjects Section-->
+        <!--DICOM Section-->
         <v-list-tile>
           <v-list-tile-action>
-            <v-icon color="primary">fas fa-user</v-icon>
+            <v-icon color="primary">fas fa-search</v-icon>
           </v-list-tile-action>
           <v-list-tile-content>
-            <router-link tag="button" to="/subjects">Subjects</router-link>
+            <router-link tag="button" to="/dicom-find">DICOM Find</router-link>
           </v-list-tile-content>
         </v-list-tile>
 
@@ -101,6 +101,13 @@
       <v-toolbar-side-icon @click.native="drawer = !drawer"></v-toolbar-side-icon>
       <span class="title ml-2 mr-3">CAD-<span class="text">Proxy</span></span>
       
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/" class="no-border-radius">
+          <v-icon>fas fa-user</v-icon>
+        </v-btn>
+        <span>Subject List</span>
+      </v-tooltip>
+
       <v-tooltip bottom>
         <v-btn icon slot="activator" to="/pull-list" class="no-border-radius">
           <v-icon>fas fa-download</v-icon>

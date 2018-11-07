@@ -7,6 +7,7 @@
     <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
       <v-progress-linear slot="progress" indeterminate></v-progress-linear>
       <template slot="items" slot-scope="props">
+        <td>{{ props.item.id }}</td>
         <td>{{ props.item.target }}</td>
         <td>{{ props.item.started }}</td>
         <td>{{ props.item.status }}</td>
@@ -35,7 +36,8 @@ export default class PushList extends Vue {
   }
 
   headers = [
-    { text: 'Target', align: 'left', sortable: false, value: 'target' },
+    { text: 'ID', sortable: false, value: 'id' },
+    { text: 'Target', sortable: false, value: 'target' },
     { text: 'Started', sortable: false, value: 'started' },
     { text: 'Status', sortable: false, value: 'status' },
     { text: 'Status-Time', sortable: false, value: 'stime' },
@@ -56,7 +58,7 @@ export default class PushList extends Vue {
         this.pagination.totalItems = res.data.total
         this.onLoading = false
       }).catch(e => {
-        this.error = `Server request error => ${e.message}`
+        this.error = e.message
         this.inError = true
       })
   }

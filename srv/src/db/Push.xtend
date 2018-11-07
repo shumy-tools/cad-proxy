@@ -74,7 +74,8 @@ class Push {
   def page(int skip, int limit) {
     db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
-        WITH count(n) as total, {
+        WITH count(DISTINCT n) as total, {
+          id: id(n),
           target: t.«Target.NAME»,
           started: n.«STARTED»,
           status: n.«STATUS»,

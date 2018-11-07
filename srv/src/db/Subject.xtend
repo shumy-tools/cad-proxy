@@ -67,12 +67,19 @@ class Subject {
     return res.head.get("size") as Long !== 0L
   }
   
-  def all() {
-    db.cypher('''MATCH (n:«NODE») RETURN
-      id(n) as id,
-      n.«ACTIVE» as «ACTIVE»,
-      n.«A_TIME» as «A_TIME»,
-      n.«UDI» as «UDI»
-    ''')
+  def page(int skip, int limit) {
+    db.cypher('''
+      MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)
+        WITH count(DISTINCT n) as total, {
+          id: id(n),
+          udi: n.«UDI»,
+          active: n.«ACTIVE»,
+          atime: n.«A_TIME»,
+          refs: count(p) 
+        } as list
+      ORDER BY list.atime SKIP «skip» LIMIT «limit»
+      RETURN
+        total, collect(list) as data
+    ''').head
   }
 }
