@@ -1,5 +1,6 @@
 package base
 
+import db.Pull
 import db.Store
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
@@ -14,9 +15,9 @@ class WebServer {
   val Store store
   val json = new JsonTransformer
   
-  enum PageType { SUBJECT, PULL, PUSH }
+  enum NodeType { SUBJECT, PULL, PUSH }
   
-  def getPage(PageType pt, Request req) {
+  def getPage(NodeType nt, Request req) {
     logger.debug("GET ", req.uri)
     
     // parameter parser and validation
@@ -28,15 +29,23 @@ class WebServer {
     
     val skip = page * pageSize
     
-    switch pt {
+    switch nt {
       case SUBJECT: return store.SUBJECT.page(skip, pageSize)
       case PULL: return store.PULL.page(skip, pageSize)
       case PUSH: return store.PUSH.page(skip, pageSize)
     }
   }
   
-  def getSubject(Request req) {
+  def getDetails(NodeType nt, Request req) {
+    logger.debug("GET ", req.uri)
     
+    val id = Long.parseLong(req.params("id"))
+    
+    switch nt {
+      case SUBJECT: return store.SUBJECT.details(id)
+      case PULL: return store.PULL.details(id)
+      case PUSH: return store.PUSH.details(id)
+    }
   }
   
   def void setup() {
@@ -60,16 +69,18 @@ class WebServer {
       ]
       
       path("/subject")[
-        get("/:id", [req, res | getSubject(req)], json)
-        get("/page/:page", [req, res | getPage(PageType.SUBJECT, req)], json)
+        get("/:id", [req, res | getDetails(NodeType.SUBJECT, req)], json)
+        get("/page/:page", [req, res | getPage(NodeType.SUBJECT, req)], json)
       ]
       
       path("/pull")[
-        get("/page/:page", [req, res | getPage(PageType.PULL, req)], json)
+        get("/:id", [req, res | getDetails(NodeType.PULL, req)], json)
+        get("/page/:page", [req, res | getPage(NodeType.PULL, req)], json)
       ]
       
       path("/push")[
-        get("/page/:page", [req, res | getPage(PageType.PUSH, req)], json)
+        get("/:id", [req, res | getDetails(NodeType.PUSH, req)], json)
+        get("/page/:page", [req, res | getPage(NodeType.PUSH, req)], json)
       ]
     ]
   }

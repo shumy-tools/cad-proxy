@@ -69,17 +69,47 @@ class Subject {
   
   def page(int skip, int limit) {
     db.cypher('''
-      MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)
-        WITH count(DISTINCT n) as total, {
-          id: id(n),
-          udi: n.«UDI»,
-          active: n.«ACTIVE»,
-          atime: n.«A_TIME»,
-          refs: count(p) 
-        } as list
+      MATCH (n:«NODE»)
+      OPTIONAL MATCH (n)-[:IS]->(p:«Patient.NODE»)
+      WITH count(DISTINCT n) as total, {
+        id: id(n),
+        udi: n.«UDI»,
+        active: n.«ACTIVE»,
+        atime: n.«A_TIME»,
+        sources: count(DISTINCT p)
+      } as list
       ORDER BY list.atime SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head
+  }
+  
+  def details(Long subjectID) {
+    val res = db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «subjectID»
+      RETURN n.«UDI» as udi,
+        [(n)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE») | p {
+          id: id(p),
+          source: s.«Source.AET»,
+          .«Patient.PID»,
+          .«Patient.SEX»,
+          .«Patient.BIRTHDAY»
+        }] as sources,
+        
+        [(n)-[:HAS*]->(e:«Series.NODE») | e {
+          id: id(e),
+          .«Series.UID»,
+          .«Series.SEQ»,
+          .«Series.MODALITY»,
+          .«Series.ELIGIBLE»,
+          .«Series.SIZE»,
+          .«Series.STATUS»
+        }] as series
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find details for subjectID: «subjectID»''')
+    
+    return res.head
   }
 }

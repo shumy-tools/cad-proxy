@@ -8,6 +8,20 @@
   background: #ffc107 !important;
 }
 
+.no-border-radius {
+  border-radius: 0px;
+}
+
 .zero-opacity:before {
   opacity: 0;
+}
+
+.list-border {
+  &.v-list__group--active, &.v-list {
+    border: 1px solid rgba(0,0,0,0.12) !important;
+  }
+
+  &:before {
+    background: transparent !important;
+  }
 }

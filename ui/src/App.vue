@@ -18,7 +18,7 @@
         <!--Sources Section-->
         <v-layout row align-center>
           <v-flex xs6>
-            <v-subheader class="title">Sources</v-subheader>
+            <v-subheader class="subheading">Sources</v-subheader>
           </v-flex>
         </v-layout>
         
@@ -44,7 +44,7 @@
         <!--Targets Section-->
         <v-layout row align-center>
           <v-flex xs6>
-            <v-subheader class="title">Targets</v-subheader>
+            <v-subheader class="subheading">Targets</v-subheader>
           </v-flex>
         </v-layout>
         
@@ -72,7 +72,7 @@
         <!--Settings Section-->
         <v-layout row align-center>
           <v-flex xs6>
-            <v-subheader class="title">Settings</v-subheader>
+            <v-subheader class="subheading">Settings</v-subheader>
           </v-flex>
         </v-layout>
 
@@ -99,7 +99,7 @@
 
     <v-toolbar app dense fixed clipped-left class="theme-bg-color">
       <v-toolbar-side-icon @click.native="drawer = !drawer"></v-toolbar-side-icon>
-      <span class="title ml-2 mr-3">CAD-<span class="text">Proxy</span></span>
+      <span class="title ml-2 mr-3">CAD-Proxy</span>
       
       <v-tooltip bottom>
         <v-btn icon slot="activator" to="/" class="no-border-radius">
@@ -147,7 +147,7 @@
     </v-toolbar>
 
     <v-content>
-      <v-container>
+      <v-container fluid>
         <router-view></router-view>
       </v-container>
     </v-content>
@@ -176,13 +176,3 @@ export default class App extends Vue {
   ]
 }
 </script>
-
-<style lang="scss">
-.text {
-  font-weight: 400;
-}
-
-.no-border-radius {
-  border-radius: 0px;
-}
-</style>

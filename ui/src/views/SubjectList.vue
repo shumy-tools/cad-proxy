@@ -1,38 +1,54 @@
 <template>
   <div>
-    <v-dialog v-model="viewDialog" max-width="800px">
-      <!--<v-btn slot="activator" color="primary" dark class="mb-2">New Item</v-btn>-->
+    <v-dialog v-model="viewDialog">
       <v-card>
-        <v-card-title>
-          <span class="headline">Subject Details</span>
+        <v-card-title class="headline grey lighten-2" primary-title>
+          <span>
+            <span class="font-weight-bold">Subject:</span>
+            {{selected.udi}}
+          </span>
         </v-card-title>
 
         <v-card-text>
-          <v-container grid-list-md>
-            <v-layout wrap>
-              <v-flex xs12 sm6 md4>
-                <v-text-field readonly v-model="selected.id" label="ID"></v-text-field>
-              </v-flex>
-              <v-flex xs12 sm6 md4>
-                <v-text-field readonly v-model="selected.udi" label="UDI"></v-text-field>
-              </v-flex>
-              <!--<v-flex xs12 sm6 md4>
-                <v-text-field v-model="selected.fat" label="Fat (g)"></v-text-field>
-              </v-flex>
-              <v-flex xs12 sm6 md4>
-                <v-text-field v-model="selected.carbs" label="Carbs (g)"></v-text-field>
-              </v-flex>
-              <v-flex xs12 sm6 md4>
-                <v-text-field v-model="selected.protein" label="Protein (g)"></v-text-field>
-              </v-flex>-->
-            </v-layout>
-          </v-container>
-        </v-card-text>
+          <v-list class="list-border">
+              <v-list-tile>
+                <v-list-tile-content>
+                  <v-list-tile-title class="title">Sources</v-list-tile-title>
+                </v-list-tile-content>
+              </v-list-tile>
 
-        <!--<v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" flat @click.native="close">Close</v-btn>
-        </v-card-actions>-->
+              <v-data-table hide-actions :headers="pHeaders" :items="selected.sources">
+                <template slot="items" slot-scope="props">
+                  <td>{{ props.item.id }}</td>
+                  <td>{{ props.item.source }}</td>
+                  <td>{{ props.item.pid }}</td>
+                  <td>{{ props.item.sex }}</td>
+                  <td>{{ props.item.birthday }}</td>
+                </template>
+              </v-data-table>
+          </v-list>
+
+          <v-list>
+            <v-list-group no-action class="list-border">
+              <v-list-tile slot="activator">
+                <v-list-tile-content>
+                  <v-list-tile-title class="title">Series</v-list-tile-title>
+                </v-list-tile-content>
+              </v-list-tile>
+
+              <v-data-table hide-actions :headers="eHeaders" :items="selected.series">
+                <template slot="items" slot-scope="props">
+                  <td>{{ props.item.id }}</td>
+                  <td>{{ props.item.uid }}</td>
+                  <td>{{ props.item.modality }}</td>
+                  <td>{{ props.item.eligible }}</td>
+                  <td>{{ props.item.size }}</td>
+                  <td>{{ props.item.status }}</td>
+                </template>
+              </v-data-table>
+            </v-list-group>
+          </v-list>
+        </v-card-text>
       </v-card>
     </v-dialog>
 
@@ -43,14 +59,14 @@
     <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
       <v-progress-linear slot="progress" indeterminate></v-progress-linear>
       <template slot="items" slot-scope="props">
+        <td>
+          <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
+        </td>
         <td>{{ props.item.id }}</td>
         <td>{{ props.item.udi }}</td>
+        <td>{{ props.item.sources }}</td>
         <td>{{ props.item.active }}</td>
         <td>{{ props.item.atime }}</td>
-        <td>{{ props.item.refs }}</td>
-        <td class="justify-center layout px-0">
-          <v-icon small class="mr-2" @click="viewItem(props.item)">far fa-eye</v-icon>
-        </td>
       </template>
     </v-data-table>
   </div>
@@ -75,19 +91,33 @@ export default class SubjectList extends Vue {
   }
 
   headers = [
+    { text: 'View', sortable: false, value: 'view' },
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'UDI', sortable: false, value: 'udi' },
+    { text: 'Sources', sortable: false, value: 'sources' },
     { text: 'Active', sortable: false, value: 'active' },
-    { text: 'Active-Time', sortable: false, value: 'atime' },
-    { text: 'Patient-Refs', sortable: false, value: 'refs' },
-    { text: 'View', sortable: false, value: 'view' }
+    { text: 'Active-Time', sortable: false, value: 'atime' }
+  ]
+
+  pHeaders = [
+    { text: 'ID', sortable: false, value: 'id' },
+    { text: 'Source', sortable: false, value: 'source' },
+    { text: 'PatientID', sortable: false, value: 'pid' },
+    { text: 'Sex', sortable: false, value: 'sex' },
+    { text: 'Birthday', sortable: false, value: 'birthday' }
+  ]
+
+  eHeaders = [
+    { text: 'ID', sortable: false, value: 'id' },
+    { text: 'UID', sortable: false, value: 'uid' },
+    { text: 'Modality', sortable: false, value: 'modality' },
+    { text: 'Eligible', sortable: false, value: 'eligible' },
+    { text: 'Size', sortable: false, value: 'size' },
+    { text: 'Status', sortable: false, value: 'status' }
   ]
 
   items = []
-  selected = {
-    id: '',
-    udi: ''
-  }
+  selected = {}
 
   @Watch('pagination')
   onPaginationChanged() {
@@ -107,17 +137,16 @@ export default class SubjectList extends Vue {
   }
 
   viewItem(item: any) {
-    this.selected = item
-    this.viewDialog = true
-
-    /*axios.get(`/api/subject/${item.id}`)
+    this.onLoading = true
+    axios.get(`/api/subject/${item.id}`)
       .then(res => {
         this.selected = res.data
         this.viewDialog = true
+        this.onLoading = false
       }).catch(e => {
         this.error = e.message
+        this.inError = true
       })
-    */
   }
 }
 </script>

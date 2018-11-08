@@ -88,9 +88,9 @@ class Pull {
     
     if (res.empty)
       throw new RuntimeException('''Unable to find pull-request for pullID=«pullID»''')
-      
+    
     val pullTries = res.head.get("tries") as Integer
-    if (pullTries > 2)
+    if (pullTries > 2) //TODO: set configurable pull-tries
       error(pullID, "Exceeded the number of pull-tries!")
   }
   
@@ -123,21 +123,57 @@ class Pull {
   def page(int skip, int limit) {
     db.cypher('''
       MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
-        WITH count(DISTINCT n) as total, {
-          id: id(n),
-          source: s.«Source.AET»,
-          started: n.«STARTED»,
-          type: n.«TYPE»,
-          status: n.«STATUS»,
-          stime: n.«S_TIME»,
-          tries: n.«PULL_TRIES»,
-          error: n.«ERROR»
+        WHERE n.«TYPE» = "«Type.REQ.name»"
+      OPTIONAL MATCH (n)-[:THESE]->(:«Study.NODE»)<-[:HAS]-(u:«Subject.NODE»), (n)-[:THESE]->(:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
+      WITH count(DISTINCT n) as total, {
+        id: id(n),
+        source: s.«Source.AET»,
+        started: n.«STARTED»,
+        subjects: count(DISTINCT u),
+        series: count(DISTINCT e),
+        status: n.«STATUS»,
+        stime: n.«S_TIME»,
+        tries: n.«PULL_TRIES»,
+        error: n.«ERROR»
         } as list
       ORDER BY list.started SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head
   }
+  
+  def details(Long requestID) {
+    val res = db.cypher('''
+      MATCH (n:«NODE»)
+        WHERE id(n) = «requestID» AND n.«TYPE» = "«Type.REQ.name»"
+      RETURN id(n) as id,
+        [(n)-[:FROM]->(p:«NODE») | p {
+          id: id(p),
+          .«STARTED»,
+          .«STATUS»,
+          .«S_TIME»,
+          .«ERROR»
+        }] as pulls,
+        
+        [(n)-[:THESE]->(:«Study.NODE»)-[:HAS]->(e:«Series.NODE») | e {
+          id: id(e),
+          .«Series.UID»,
+          .«Series.SEQ»,
+          .«Series.MODALITY»,
+          .«Series.ELIGIBLE»,
+          .«Series.SIZE»,
+          .«Series.STATUS»,
+          .«Series.S_TIME»,
+          .«Series.ERROR»
+        }] as series
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find details for requestID: «requestID»''')
+    
+    return res.head
+  }
+  
   
   def data(Long pullID, Type type) {
     val res = db.cypher('''

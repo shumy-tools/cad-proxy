@@ -74,18 +74,40 @@ class Push {
   def page(int skip, int limit) {
     db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
-        WITH count(DISTINCT n) as total, {
-          id: id(n),
-          target: t.«Target.NAME»,
-          started: n.«STARTED»,
-          status: n.«STATUS»,
-          stime: n.«S_TIME»,
-          error: n.«ERROR»
-        } as list
+      OPTIONAL MATCH (n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(s:«Subject.NODE»)
+      WITH count(DISTINCT n) as total, {
+        id: id(n),
+        target: t.«Target.NAME»,
+        started: n.«STARTED»,
+        subjects: count(DISTINCT s),
+        series: count(DISTINCT e),
+        status: n.«STATUS»,
+        stime: n.«S_TIME»,
+        error: n.«ERROR»
+      } as list
       ORDER BY list.started SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head
+  }
+  
+  def details(Long pushID) {
+    val res = db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «pushID»
+      RETURN id(n) as id,
+        [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
+          subject: p.«Subject.UDI»,
+          id: id(e),
+          .«Series.MODALITY»,
+          .«Series.SIZE»,
+          .«Series.STATUS»
+        }] as series
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find details for pushID: «pushID»''')
+    
+    return res.head
   }
   
   def data(Long pushID) {
