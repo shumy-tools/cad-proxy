@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-import Home from './views/Home.vue'
 import SubjectList from './views/SubjectList.vue'
 import PullList from './views/PullList.vue'
 import PushList from './views/PushList.vue'
+import PendingData from './views/PendingData.vue'
 
 Vue.use(Router)
 
@@ -24,6 +24,11 @@ export default new Router({
       path: '/push-list',
       name: 'push-list',
       component: PushList
+    },
+    {
+      path: '/pending-data',
+      name: 'pending-data',
+      component: PendingData
     },
 
     {

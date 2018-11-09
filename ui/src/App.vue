@@ -122,6 +122,20 @@
         <span>Push List</span>
       </v-tooltip>
       
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/pending-data" class="no-border-radius">
+          <v-icon>fas fa-clipboard-list</v-icon>
+        </v-btn>
+        <span>Pending Data</span>
+      </v-tooltip>
+      
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/schedulers" class="no-border-radius">
+          <v-icon>fas fa-clock</v-icon>
+        </v-btn>
+        <span>Schedulers</span>
+      </v-tooltip>
+
       <!--<v-text-field solo-inverted flat class="mt-2" label="Search" prepend-icon="fas fa-search"></v-text-field>-->
       
       <v-spacer></v-spacer>

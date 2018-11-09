@@ -22,7 +22,7 @@
                   <td>{{ props.item.id }}</td>
                   <td>{{ props.item.started }}</td>
                   <td>{{ props.item.status }}</td>
-                  <td>{{ props.item.stime }}</td>
+                  <td>{{ props.item.sTime }}</td>
                   <td>{{ props.item.error }}</td>
                 </template>
               </v-data-table>
@@ -39,7 +39,7 @@
               <v-data-table hide-actions :headers="eHeaders" :items="selected.series">
                 <template slot="items" slot-scope="props">
                   <td>{{ props.item.id }}</td>
-                  <td>{{ props.item.uid }}</td>
+                  <td>{{ props.item.subject }}</td>
                   <td>{{ props.item.modality }}</td>
                   <td>{{ props.item.eligible }}</td>
                   <td>{{ props.item.size }}</td>
@@ -70,8 +70,8 @@
         <td>{{ props.item.series }}</td>
         <td>{{ props.item.started }}</td>
         <td>{{ props.item.status }}</td>
-        <td>{{ props.item.stime }}</td>
-        <td>{{ props.item.tries }}</td>
+        <td>{{ props.item.sTime }}</td>
+        <td>{{ props.item.pullTries }}</td>
         <td>{{ props.item.error }}</td>
       </template>
     </v-data-table>
@@ -102,11 +102,11 @@ export default class PullList extends Vue {
     { text: 'Source', sortable: false, value: 'source' },
     { text: 'Subjects', sortable: false, value: 'subjects' },
     { text: 'Series', sortable: false, value: 'series' },
-    
+
     { text: 'Started', sortable: false, value: 'started' },
     { text: 'Status', sortable: false, value: 'status' },
-    { text: 'Status-Time', sortable: false, value: 'stime' },
-    { text: 'Tries', sortable: false, value: 'tries' },
+    { text: 'Status-Time', sortable: false, value: 'sTime' },
+    { text: 'Tries', sortable: false, value: 'pullTries' },
     { text: 'Error', sortable: false, value: 'error' }
   ]
 
@@ -114,13 +114,13 @@ export default class PullList extends Vue {
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Started', sortable: false, value: 'started' },
     { text: 'Status', sortable: false, value: 'status' },
-    { text: 'Status-Time', sortable: false, value: 'stime' },
+    { text: 'Status-Time', sortable: false, value: 'sTime' },
     { text: 'Error', sortable: false, value: 'error' }
   ]
 
   eHeaders = [
     { text: 'ID', sortable: false, value: 'id' },
-    { text: 'UID', sortable: false, value: 'uid' },
+    { text: 'Subject', sortable: false, value: 'subject' },
     { text: 'Modality', sortable: false, value: 'modality' },
     { text: 'Eligible', sortable: false, value: 'eligible' },
     { text: 'Size', sortable: false, value: 'size' },

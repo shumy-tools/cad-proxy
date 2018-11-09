@@ -21,9 +21,9 @@
                 <template slot="items" slot-scope="props">
                   <td>{{ props.item.id }}</td>
                   <td>{{ props.item.subject }}</td>
+                  <td>{{ props.item.date }}</td>
                   <td>{{ props.item.modality }}</td>
                   <td>{{ props.item.size }}</td>
-                  <td>{{ props.item.status }}</td>
                 </template>
               </v-data-table>
           </v-list>
@@ -47,7 +47,7 @@
         <td>{{ props.item.series }}</td>
         <td>{{ props.item.started }}</td>
         <td>{{ props.item.status }}</td>
-        <td>{{ props.item.stime }}</td>
+        <td>{{ props.item.sTime }}</td>
         <td>{{ props.item.error }}</td>
       </template>
     </v-data-table>
@@ -78,19 +78,19 @@ export default class PushList extends Vue {
     { text: 'Target', sortable: false, value: 'target' },
     { text: 'Subjects', sortable: false, value: 'subjects' },
     { text: 'Series', sortable: false, value: 'series' },
-    
+
     { text: 'Started', sortable: false, value: 'started' },
     { text: 'Status', sortable: false, value: 'status' },
-    { text: 'Status-Time', sortable: false, value: 'stime' },
+    { text: 'Status-Time', sortable: false, value: 'sTime' },
     { text: 'Error', sortable: false, value: 'error' }
   ]
 
   eHeaders = [
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Subject', sortable: false, value: 'subject' },
+    { text: 'Study-Date', sortable: false, value: 'date' },
     { text: 'Modality', sortable: false, value: 'modality' },
-    { text: 'Size', sortable: false, value: 'size' },
-    { text: 'Status', sortable: false, value: 'status' }
+    { text: 'Size', sortable: false, value: 'size' }
   ]
 
   items = []
@@ -104,6 +104,7 @@ export default class PushList extends Vue {
     this.onLoading = true
     axios.get(`/api/push/page/${page}?pageSize=${pageSize}`)
       .then(res => {
+        console.log(res.data)
         this.items = res.data.data
         this.pagination.totalItems = res.data.total
         this.onLoading = false

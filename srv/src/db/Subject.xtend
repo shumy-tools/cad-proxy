@@ -71,14 +71,14 @@ class Subject {
     db.cypher('''
       MATCH (n:«NODE»)
       OPTIONAL MATCH (n)-[:IS]->(p:«Patient.NODE»)
-      WITH count(DISTINCT n) as total, {
+      WITH count(DISTINCT n) as total, n {
         id: id(n),
-        udi: n.«UDI»,
-        active: n.«ACTIVE»,
-        atime: n.«A_TIME»,
-        sources: count(DISTINCT p)
+        sources: count(DISTINCT p),
+        .«UDI»,
+        .«ACTIVE»,
+        .«A_TIME»
       } as list
-      ORDER BY list.atime SKIP «skip» LIMIT «limit»
+      ORDER BY list.«A_TIME» DESC SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head

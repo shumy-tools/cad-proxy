@@ -75,17 +75,17 @@ class Push {
     db.cypher('''
       MATCH (n:«NODE»)-[:TO]->(t:«Target.NODE»)
       OPTIONAL MATCH (n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(s:«Subject.NODE»)
-      WITH count(DISTINCT n) as total, {
+      WITH count(DISTINCT n) as total, n {
         id: id(n),
         target: t.«Target.NAME»,
-        started: n.«STARTED»,
         subjects: count(DISTINCT s),
         series: count(DISTINCT e),
-        status: n.«STATUS»,
-        stime: n.«S_TIME»,
-        error: n.«ERROR»
+        .«STARTED»,
+        .«STATUS»,
+        .«S_TIME»,
+        .«ERROR»
       } as list
-      ORDER BY list.started SKIP «skip» LIMIT «limit»
+      ORDER BY list.«STARTED» DESC SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head
@@ -95,12 +95,12 @@ class Push {
     val res = db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «pushID»
       RETURN id(n) as id,
-        [(n)-[:THESE]->(e:«Series.NODE»)<-[:HAS*]-(p:«Subject.NODE») | e {
-          subject: p.«Subject.UDI»,
+        [(n)-[:THESE]->(e:«Series.NODE») | e {
+          subject: head([(u:«Subject.NODE»)-[:HAS*]->(e) | u.«Subject.UDI»]),
+          date: head([(s:«Study.NODE»)-[:HAS]->(e) | s.«Study.DATE»]),
           id: id(e),
           .«Series.MODALITY»,
-          .«Series.SIZE»,
-          .«Series.STATUS»
+          .«Series.SIZE»
         }] as series
     ''')
     

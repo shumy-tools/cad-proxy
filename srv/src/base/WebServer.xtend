@@ -1,7 +1,7 @@
 package base
 
-import db.Pull
 import db.Store
+import java.util.Collections
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 import spark.Request
@@ -15,7 +15,7 @@ class WebServer {
   val Store store
   val json = new JsonTransformer
   
-  enum NodeType { SUBJECT, PULL, PUSH }
+  enum NodeType { SUBJECT, PULL, PUSH, PENDING }
   
   def getPage(NodeType nt, Request req) {
     logger.debug("GET ", req.uri)
@@ -29,11 +29,14 @@ class WebServer {
     
     val skip = page * pageSize
     
-    switch nt {
-      case SUBJECT: return store.SUBJECT.page(skip, pageSize)
-      case PULL: return store.PULL.page(skip, pageSize)
-      case PUSH: return store.PUSH.page(skip, pageSize)
+    val res = switch nt {
+      case SUBJECT: store.SUBJECT.page(skip, pageSize)
+      case PULL: store.PULL.page(skip, pageSize)
+      case PUSH: store.PUSH.page(skip, pageSize)
+      case PENDING: store.TARGET.pendingPage(skip, pageSize)
     }
+    
+    return res ?: #{ "total" -> 0, "data" -> Collections.EMPTY_LIST }
   }
   
   def getDetails(NodeType nt, Request req) {
@@ -42,9 +45,10 @@ class WebServer {
     val id = Long.parseLong(req.params("id"))
     
     switch nt {
-      case SUBJECT: return store.SUBJECT.details(id)
-      case PULL: return store.PULL.details(id)
-      case PUSH: return store.PUSH.details(id)
+      case SUBJECT: store.SUBJECT.details(id)
+      case PULL: store.PULL.details(id)
+      case PUSH: store.PUSH.details(id)
+      case PENDING: null
     }
   }
   
@@ -57,7 +61,6 @@ class WebServer {
     staticFileLocation("/ui")
     
     path("/api")[
-      
       before[ req, res |
         logger.info("API call")
         //if (!authenticated) {
@@ -67,6 +70,8 @@ class WebServer {
       after[req, res |
         res.type("application/json")
       ]
+      
+      get("/pending/:page", [req, res | getPage(NodeType.PENDING, req)], json)
       
       path("/subject")[
         get("/:id", [req, res | getDetails(NodeType.SUBJECT, req)], json)

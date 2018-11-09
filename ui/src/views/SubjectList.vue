@@ -66,7 +66,7 @@
         <td>{{ props.item.udi }}</td>
         <td>{{ props.item.sources }}</td>
         <td>{{ props.item.active }}</td>
-        <td>{{ props.item.atime }}</td>
+        <td>{{ props.item.aTime }}</td>
       </template>
     </v-data-table>
   </div>
@@ -96,7 +96,7 @@ export default class SubjectList extends Vue {
     { text: 'UDI', sortable: false, value: 'udi' },
     { text: 'Sources', sortable: false, value: 'sources' },
     { text: 'Active', sortable: false, value: 'active' },
-    { text: 'Active-Time', sortable: false, value: 'atime' }
+    { text: 'Active-Time', sortable: false, value: 'aTime' }
   ]
 
   pHeaders = [

@@ -125,18 +125,18 @@ class Pull {
       MATCH (n:«NODE»)-[:FROM]->(s:«Source.NODE»)
         WHERE n.«TYPE» = "«Type.REQ.name»"
       OPTIONAL MATCH (n)-[:THESE]->(:«Study.NODE»)<-[:HAS]-(u:«Subject.NODE»), (n)-[:THESE]->(:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
-      WITH count(DISTINCT n) as total, {
+      WITH count(DISTINCT n) as total, n {
         id: id(n),
         source: s.«Source.AET»,
-        started: n.«STARTED»,
         subjects: count(DISTINCT u),
         series: count(DISTINCT e),
-        status: n.«STATUS»,
-        stime: n.«S_TIME»,
-        tries: n.«PULL_TRIES»,
-        error: n.«ERROR»
+        .«STARTED»,
+        .«STATUS»,
+        .«S_TIME»,
+        .«PULL_TRIES»,
+        .«ERROR»
         } as list
-      ORDER BY list.started SKIP «skip» LIMIT «limit»
+      ORDER BY list.«STARTED» DESC SKIP «skip» LIMIT «limit»
       RETURN
         total, collect(list) as data
     ''').head
@@ -147,7 +147,7 @@ class Pull {
       MATCH (n:«NODE»)
         WHERE id(n) = «requestID» AND n.«TYPE» = "«Type.REQ.name»"
       RETURN id(n) as id,
-        [(n)-[:FROM]->(p:«NODE») | p {
+        [(p:«NODE»)-[:FROM]->(n) | p {
           id: id(p),
           .«STARTED»,
           .«STATUS»,
@@ -155,10 +155,9 @@ class Pull {
           .«ERROR»
         }] as pulls,
         
-        [(n)-[:THESE]->(:«Study.NODE»)-[:HAS]->(e:«Series.NODE») | e {
+        [(n)-[:THESE]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE») | e {
+          subject: head([(u:«Subject.NODE»)-[:HAS]->(s) | u.«Subject.UDI»]),
           id: id(e),
-          .«Series.UID»,
-          .«Series.SEQ»,
           .«Series.MODALITY»,
           .«Series.ELIGIBLE»,
           .«Series.SIZE»,
@@ -180,13 +179,13 @@ class Pull {
       «IF type == Type.REQ»
         MATCH (s:«Source.NODE»)<-[:FROM]-(n:«NODE»)
         WHERE id(n) = «pullID» AND n.«TYPE» = "«type.name»"
-        WITH id(s) as source, "«Source.NODE»" as type, n
+        WITH id(s) as source, n
       «ELSE»
         MATCH (l:«NODE»)-[:FROM]->(n:«NODE»)-[:FROM]->(s:«Source.NODE»)
         WHERE id(l) = «pullID» AND l.«TYPE» = "«type.name»" AND n.«TYPE» = "«Type.REQ.name»"
-        WITH id(s) as source, "«NODE»" as type, n
+        WITH id(s) as source, n
       «ENDIF»
-      RETURN source, type, n.«STATUS» as status, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
+      RETURN source, n.«STATUS» as status, [(n)-[:THESE]->(s:«Study.NODE»)<-[:HAS]-(p:«Subject.NODE») | s {
         subject: p.«Subject.UDI»,
         id: id(s),
         .«Study.UID»,
