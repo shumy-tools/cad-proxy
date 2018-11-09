@@ -35,22 +35,29 @@
       {{error}}
     </v-alert>
 
-    <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
-      <v-progress-linear slot="progress" indeterminate></v-progress-linear>
-      <template slot="items" slot-scope="props">
-        <td>
-          <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
-        </td>
-        <td>{{ props.item.id }}</td>
-        <td>{{ props.item.target }}</td>
-        <td>{{ props.item.subjects }}</td>
-        <td>{{ props.item.series }}</td>
-        <td>{{ props.item.started }}</td>
-        <td>{{ props.item.status }}</td>
-        <td>{{ props.item.sTime }}</td>
-        <td>{{ props.item.error }}</td>
-      </template>
-    </v-data-table>
+    <v-card class="elevation-1">
+      <v-card-title class="title">
+        Push List
+        <v-spacer></v-spacer>
+      </v-card-title>
+
+      <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
+        <v-progress-linear slot="progress" indeterminate></v-progress-linear>
+        <template slot="items" slot-scope="props">
+          <td>
+            <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
+          </td>
+          <td>{{ props.item.id }}</td>
+          <td>{{ props.item.target }}</td>
+          <td>{{ props.item.subjects }}</td>
+          <td>{{ props.item.series }}</td>
+          <td>{{ props.item.started }}</td>
+          <td>{{ props.item.status }}</td>
+          <td>{{ props.item.sTime }}</td>
+          <td>{{ props.item.error }}</td>
+        </template>
+      </v-data-table>
+    </v-card>
   </div>
 </template>
 
@@ -104,7 +111,6 @@ export default class PushList extends Vue {
     this.onLoading = true
     axios.get(`/api/push/page/${page}?pageSize=${pageSize}`)
       .then(res => {
-        console.log(res.data)
         this.items = res.data.data
         this.pagination.totalItems = res.data.total
         this.onLoading = false

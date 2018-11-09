@@ -43,6 +43,8 @@ class Store {
     this.db = db
     db => [
       cypher('''CREATE CONSTRAINT ON (n:«Target.NODE») ASSERT n.«Target.UDI» IS UNIQUE''')
+      cypher('''CREATE CONSTRAINT ON (n:«Target.NODE») ASSERT n.«Target.NAME» IS UNIQUE''')
+      
       cypher('''CREATE CONSTRAINT ON (n:«Source.NODE») ASSERT n.«Source.AET» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Subject.NODE») ASSERT n.«Subject.UDI» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Study.NODE») ASSERT n.«Study.UID» IS UNIQUE''')

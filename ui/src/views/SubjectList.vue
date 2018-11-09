@@ -56,19 +56,26 @@
       {{error}}
     </v-alert>
 
-    <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
-      <v-progress-linear slot="progress" indeterminate></v-progress-linear>
-      <template slot="items" slot-scope="props">
-        <td>
-          <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
-        </td>
-        <td>{{ props.item.id }}</td>
-        <td>{{ props.item.udi }}</td>
-        <td>{{ props.item.sources }}</td>
-        <td>{{ props.item.active }}</td>
-        <td>{{ props.item.aTime }}</td>
-      </template>
-    </v-data-table>
+    <v-card class="elevation-1">
+      <v-card-title class="title">
+        Subject List
+        <v-spacer></v-spacer>
+      </v-card-title>
+      
+      <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
+        <v-progress-linear slot="progress" indeterminate></v-progress-linear>
+        <template slot="items" slot-scope="props">
+          <td>
+            <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
+          </td>
+          <td>{{ props.item.id }}</td>
+          <td>{{ props.item.udi }}</td>
+          <td>{{ props.item.sources }}</td>
+          <td>{{ props.item.active }}</td>
+          <td>{{ props.item.aTime }}</td>
+        </template>
+      </v-data-table>
+    </v-card>
   </div>
 </template>
 

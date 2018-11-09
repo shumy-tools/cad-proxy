@@ -55,40 +55,52 @@ class Target {
   }
   
   def pendingSeries() {
-    db.cypher(pendingMatch(Series.Status.READY) + "RETURN id(n) as id, collect(id(e)) as series")
+    db.cypher('''
+      «pendingMatch(Series.Status.READY, null)»
+      RETURN id(n) as id, collect(id(e)) as series
+    ''')
   }
   
-  def pendingPage(int skip, int limit) {
+  def pending() {
     db.cypher('''
-      MATCH (n:«NODE»)<-[:CONSENT]-(u:«Subject.NODE»)
-        WHERE u.«Subject.ACTIVE» = true AND n.«ACTIVE» = true
-      MATCH (u)-[:HAS*]->(e:«Series.NODE»)
-        WHERE e.«Series.ELIGIBLE» = true AND e.size > 0 AND e.«Series.MODALITY» IN n.«MODALITIES»
-      WITH count(DISTINCT n) as total, n {
-        id: id(n),
-        subjects: count(DISTINCT u),
-        series: count(DISTINCT e),
-        .«UDI»,
-        .«NAME»
-      } as list
-      ORDER BY list.«NAME» SKIP «skip» LIMIT «limit»
+      «pendingMatch(null, null)»
       RETURN
-        total, collect(list) as data
-    ''').head
-    
-    /*
-        subject: p.«Subject.UDI»,
+        id(n) as id,
+        n.«NAME» as target,
+        count(DISTINCT u) as subjects,
+        count(DISTINCT e) as series,
+        collect(DISTINCT e.«Series.MODALITY») as modalities
+      ORDER BY target
+    ''').toList
+  }
+  
+  def pendingDetails(Long targetID) {
+    val res = db.cypher('''
+    «pendingMatch(null, targetID)»
+      WITH n.«UDI» as udi, e {
+        id: id(e),
+        subject: u.«Subject.UDI»,
+        date: s.«Study.DATE»,
         .«Series.MODALITY»,
         .«Series.SIZE»,
         .«Series.STATUS»,
         .«Series.S_TIME»,
         .«Series.ERROR»
-     */
+      } as list
+      ORDER BY list.date DESC
+      RETURN udi, collect(list) as series
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find pending details for targetID: «targetID»''')
+    
+    return res.head
   }
   
-  private def pendingMatch(Series.Status status) '''
-    MATCH (n:«NODE»)<-[:CONSENT]-(p:«Subject.NODE»)-[:HAS*]->(e:«Series.NODE»)
-      WHERE p.«Subject.ACTIVE» = true AND n.«ACTIVE» = true
+  private def pendingMatch(Series.Status status, Long targetID) '''
+    MATCH (n:«NODE»)<-[:CONSENT]-(u:«Subject.NODE»)-[:HAS]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
+      WHERE «IF targetID !== null»id(n) = «targetID» AND«ENDIF»
+        u.«Subject.ACTIVE» = true AND n.«ACTIVE» = true
         AND e.«Series.ELIGIBLE» = true AND e.size > 0 «IF status !== null»AND e.«Series.STATUS» = "«status.name»"«ENDIF»
         AND e.«Series.MODALITY» IN n.«MODALITIES»
     MATCH (e) WHERE NOT (e)<-[:THESE]-(:«Push.NODE»)-[:TO]->(n) 
