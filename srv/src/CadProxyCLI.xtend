@@ -87,9 +87,6 @@ class CadProxyCLI {
         new Server(cmd.ethName).run(cmd.noSchedule)
         return
       }
-      
-      //testPull
-      //setTargets
     } catch (Throwable ex) {
       if (cmd.stack)
         ex.printStackTrace

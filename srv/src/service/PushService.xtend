@@ -24,7 +24,7 @@ class PushService {
   new(Store store, TransmitService transmit) {
     this.store = store
     this.transmit = transmit
-    this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
+    this.cachePath = System.getProperty("dataPath") + store.KEY.get("path", "cache")
   }
   
   def Set<Long> pushRequests() {

@@ -39,6 +39,13 @@ class Store {
     db.cypher(cypher, params)
   }
   
+  def edges() {
+    return #{
+      "sources" -> SOURCE.all,
+      "targets" -> TARGET.all
+    }
+  }
+  
   private new(NeoDB db) {
     this.db = db
     db => [
@@ -46,6 +53,7 @@ class Store {
       cypher('''CREATE CONSTRAINT ON (n:«Target.NODE») ASSERT n.«Target.NAME» IS UNIQUE''')
       
       cypher('''CREATE CONSTRAINT ON (n:«Source.NODE») ASSERT n.«Source.AET» IS UNIQUE''')
+      
       cypher('''CREATE CONSTRAINT ON (n:«Subject.NODE») ASSERT n.«Subject.UDI» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Study.NODE») ASSERT n.«Study.UID» IS UNIQUE''')
       cypher('''CREATE CONSTRAINT ON (n:«Series.NODE») ASSERT n.«Series.UID» IS UNIQUE''')

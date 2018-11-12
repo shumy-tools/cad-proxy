@@ -144,12 +144,12 @@ class PullService {
   
   new(Store store) {
     this.store = store
-    this.cachePath = System.getProperty("dataPath") + store.KEY.get(String, "path", "cache")
-    this.whiteList = store.KEY.get(Set, "dicom", "white-list")
+    this.cachePath = System.getProperty("dataPath") + store.KEY.get("path", "cache")
+    this.whiteList = store.KEY.get("dicom", "white-list")
     
-    val localAET = store.KEY.get(String, "local-aet", "aet")
-    val localEthName = store.KEY.get(String, "local-aet", "eth-name")
-    val localPort = store.KEY.get(Integer, "local-aet", "port")
+    val localAET = store.KEY.get("local-aet", "aet") as String
+    val localEthName = store.KEY.get("local-aet", "eth-name") as String
+    val localPort = store.KEY.get("local-aet", "port") as Integer
     
     logger.info("Using inet interface: {}", localEthName)
     val localInet = Collections.list(NetworkInterface.getByName(localEthName).inetAddresses).filter[

@@ -32,6 +32,10 @@ class JsonTransformer implements ResponseTransformer {
       .create
   }
   
+  def <T> T parse(String body, Class<T> type) {
+    gson.fromJson(body, type)
+  }
+  
   override render(Object model) throws Exception {
     gson.toJson(model)
   }

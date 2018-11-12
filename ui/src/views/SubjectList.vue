@@ -103,7 +103,7 @@ export default class SubjectList extends Vue {
     { text: 'UDI', sortable: false, value: 'udi' },
     { text: 'Sources', sortable: false, value: 'sources' },
     { text: 'Active', sortable: false, value: 'active' },
-    { text: 'Active-Time', sortable: false, value: 'aTime' }
+    { text: 'Active-Since', sortable: false, value: 'aTime' }
   ]
 
   pHeaders = [

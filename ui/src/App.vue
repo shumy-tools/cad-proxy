@@ -1,5 +1,78 @@
 <template>
   <v-app>
+    <v-dialog v-model="viewDialog">
+      <v-card>
+        <v-card-title class="headline grey lighten-2" primary-title>
+          <span>
+            <span class="font-weight-bold">{{selected.edge}}</span>
+          </span>
+        </v-card-title>
+
+        <v-alert :value="inError" type="error">
+          {{error}}
+        </v-alert>
+
+        <v-form ref="form" v-model="validForm">
+          <v-container fluid grid-list-md>
+            <v-layout row wrap>
+                <!--ID/UDI-->
+                <v-flex xs12 sm1>
+                  <v-text-field disabled v-model="selected.id" label="ID"></v-text-field>
+                </v-flex>
+                <v-flex xs12 sm11>
+                  <v-text-field v-if="selected.edge == 'Target'" :disabled="!selected.create" v-model="selected.udi" label="UDI"
+                    :rules="rules.udi"></v-text-field>
+                </v-flex>
+
+                <!--ACTIVE-->
+                <v-flex xs12 sm4>
+                  <v-switch v-model="selected.active" label="Active"></v-switch>
+                </v-flex>
+                <v-flex xs12 sm8>
+                  <v-text-field v-if="selected.active" disabled v-model="selected.aTime" label="Active-Since"></v-text-field>
+                </v-flex>
+
+                <!--Name-->
+                <v-flex xs12 md4>
+                  <v-text-field v-if="selected.edge == 'Source'" v-model="selected.aet" label="AET"
+                    :rules="rules.name"></v-text-field>
+                
+                  <v-text-field v-if="selected.edge == 'Target'" v-model="selected.name" label="Name"
+                    :rules="rules.name"></v-text-field>
+                </v-flex>
+
+                <!--Source-->
+                <v-flex v-if="selected.edge == 'Source'" xs12 md4>
+                  <v-text-field v-model="selected.host" label="Host"
+                    :rules="rules.host"></v-text-field>
+                </v-flex>
+                <v-flex v-if="selected.edge == 'Source'" xs12 md4>
+                  <v-text-field v-model="selected.port" label="Port"
+                    :rules="rules.port"></v-text-field>
+                </v-flex>
+
+                <!--Target-->
+                <v-flex v-if="selected.edge == 'Target'" xs12 md4>
+                  <v-select :items="modalities" item-value="name" item-text="desc" v-model="selected.modalities" label="Modalities" multiple
+                    :rules="rules.modalities">
+                    <template slot="selection" slot-scope="{ item, index }">
+                      <span v-if="index <= 3" class="mr-2">{{ item.name }}</span>
+                      <span v-if="index === 4" class="grey--text caption">(+{{ selected.modalities.length - 4 }} more)</span>
+                    </template>
+                  </v-select>
+                </v-flex>
+            </v-layout>
+
+            <v-toolbar flat dense color="white">
+              <v-spacer></v-spacer>
+              <v-btn v-if="!selected.create" flat @click="remove">remove</v-btn>
+              <v-btn :disabled="!validForm" color="primary" @click="submit">submit</v-btn>
+            </v-toolbar>
+          </v-container>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
     <v-navigation-drawer fixed clipped class="grey lighten-4" app v-model="drawer">
       <v-list dense class="grey lighten-4">
         
@@ -23,21 +96,21 @@
         </v-layout>
         
           <!--Source List-->
-          <v-list-tile v-for="(item, i) in sources" :key="`src-${i}`" class="ml-3">
+          <v-list-tile v-for="(item, i) in items.sources" :key="`src-${i}`" class="ml-3">
             <v-list-tile-action>
-              <v-icon small>fas fa-download</v-icon>
+              <v-icon small :color="item.active ? 'primary' : ''">fas fa-download</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" :to="item.to">{{ item.label }}</router-link>
+              <a @click="openEdge('Source', item)">{{ item.aet }}</a>
             </v-list-tile-content>
           </v-list-tile>
 
-          <v-list-tile>
+          <v-list-tile class="ml-3">
             <v-list-tile-action>
-              <v-icon color="primary">fas fa-plus</v-icon>
+              <v-icon small color="primary">fas fa-plus</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" to="/new-source">New</router-link>
+              <a @click="newEdge('Source')">New</a>
             </v-list-tile-content>
           </v-list-tile>
 
@@ -49,21 +122,21 @@
         </v-layout>
         
           <!--Target List-->
-          <v-list-tile v-for="(item, i) in targets" :key="`trg-${i}`" class="ml-3">
+          <v-list-tile v-for="(item, i) in items.targets" :key="`trg-${i}`" class="ml-3">
             <v-list-tile-action>
-              <v-icon small>fas fa-upload</v-icon>
+              <v-icon small :color="item.active ? 'primary' : ''">fas fa-upload</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" :to="item.to">{{ item.label }}</router-link>
+              <a @click="openEdge('Target', item)">{{ item.name }}</a>
             </v-list-tile-content>
           </v-list-tile>
 
-          <v-list-tile>
+          <v-list-tile class="ml-3">
             <v-list-tile-action>
-              <v-icon color="primary">fas fa-plus</v-icon>
+              <v-icon small color="primary">fas fa-plus</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" to="/new-target">New</router-link>
+              <a @click="newEdge('Target')">New</a>
             </v-list-tile-content>
           </v-list-tile>
 
@@ -174,19 +247,148 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import axios from 'axios';
 
 @Component
 export default class App extends Vue {
   drawer = false
+  
+  inError = false
+  error = "none"
 
-  sources = [
-    { label: 'Source-X', to: '/source-x' },
-    { label: 'Source-Y', to: '/source-y' }
-  ]
+  onLoading = true
+  viewDialog = false
+  
+  validForm = false
+  rules = {
+    udi: [
+      v => !!v || 'Required field'
+      //TODO: validate with CRC!
+    ],
+    name: [
+      v => !!v || 'Required field'
+    ],
+    host: [
+      v => !!v || 'Required field'
+    ],
+    port: [
+      v => !!v || 'Required field',
+      v => /^([1-9][0-9]*)$/.test(v) || 'Only numeric values'
+    ],
+    modalities: [
+      v => v.length != 0 || 'Required at least one'
+    ]
+  }
 
-  targets = [
-    { label: 'Target-X', to: '/target-x' },
-    { label: 'Target-Y', to: '/target-y' }
-  ]
+  original: any = null
+  selected: any = {
+    create: false,
+    edge: 'None'
+  }
+
+  modalities = [ { name: '', desc: '' } ]
+  items = { sources: [], targets: [] }
+ 
+  created() {
+    this.onLoading = true
+    axios.get(`/api/edges`)
+      .then(res => {
+        this.items = res.data
+        this.onLoading = false
+      }).catch(e => {
+        this.error = e.message
+        this.inError = true
+      })
+
+    axios.get(`/api/keys/dicom/modalities`)
+      .then(res => {
+        this.modalities = res.data.map(it => {
+          let splitIndex = it.indexOf("-")
+          let name = it.substring(0, splitIndex)
+          let desc = it.substring(splitIndex + 1, it.length)
+          return { "name": name, "desc": `(${name}) ${desc}` }
+        })
+
+        this.onLoading = false
+      }).catch(e => {
+        this.error = e.message
+        this.inError = true
+      })
+  }
+
+  openEdge(edge: string, item: any) {
+    this.original = item
+    
+    this.selected = JSON.parse(JSON.stringify(item))
+    this.selected.create = false
+    this.selected.edge = edge
+
+    this.viewDialog = true
+    this.inError = false
+  }
+
+  newEdge(edge: string) {
+    this.original = null
+    
+    this.selected = { create: true, edge: edge, active: true, aTime: null, modalities: [] }
+    
+    this.viewDialog = true
+    this.inError = false
+  }
+
+  remove() {
+    axios.delete(`/api/edges/${this.selected.edge}/${this.selected.id}`)
+      .then(res => {
+        this.removeSelected()
+        this.viewDialog = false
+      }).catch(e => {
+        this.error = e.message
+        this.inError = true
+      })
+  }
+
+  submit() {
+    delete this.selected.aTime
+    delete this.selected.create
+
+    if ((this.$refs.form as HTMLFormElement).validate())
+      axios.post(`/api/edges`, this.selected)
+        .then(res => {
+          this.updateSelected(res.data)
+          this.viewDialog = false
+        }).catch(e => {
+          this.error = e.message
+          this.inError = true
+        })
+  }
+
+  private updateSelected(data: any) {
+    let list
+    if (this.selected.edge == 'Source')
+      list = 'sources'
+    else
+      list = 'targets'
+
+    this.selected.id = data.id
+    this.selected.aTime = data.aTime
+    
+    if (this.original !== null) {
+      let index = this.items[list].indexOf(this.original)
+      this.items[list][index] = this.selected
+    } else {
+      this.items[list].push(this.selected)
+    }
+  }
+
+  private removeSelected() {
+    let list
+    if (this.selected.edge == 'Source')
+      list = 'sources'
+    else
+      list = 'targets'
+    
+    let index = this.items[list].indexOf(this.original)
+    this.items[list].splice(index, 1)
+  }
 }
 </script>

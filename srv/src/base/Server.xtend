@@ -29,7 +29,7 @@ class Server {
     this.transSrv = new TransmitService
     
     if(ethName !== null)
-      store.KEY.set("local-aet", "eth-name", ethName) 
+      store.KEY.set("String", "local-aet", "eth-name", ethName)
     
     this.pullSrv = new PullService(store)
     this.pushSrv = new PushService(store, transSrv)
@@ -37,8 +37,8 @@ class Server {
   
   def run(boolean noSchedule) {
     if (!noSchedule) {
-      val pullInterval = store.KEY.get(Integer, "pull", "interval")
-      val pushInterval = store.KEY.get(Integer, "push", "interval")
+      val pullInterval = store.KEY.get("pull", "interval") as Integer
+      val pushInterval = store.KEY.get("push", "interval") as Integer
       
       // TODO: set initialDelay to synchronize with a certain day time?
       

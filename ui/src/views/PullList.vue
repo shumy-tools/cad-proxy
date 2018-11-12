@@ -44,7 +44,6 @@
                   <td>{{ props.item.eligible }}</td>
                   <td>{{ props.item.size }}</td>
                   <td>{{ props.item.status }}</td>
-                  <td>{{ props.item.sTime }}</td>
                   <td>{{ props.item.error }}</td>
                 </template>
               </v-data-table>
@@ -131,9 +130,7 @@ export default class PullList extends Vue {
     { text: 'Modality', sortable: false, value: 'modality' },
     { text: 'Eligible', sortable: false, value: 'eligible' },
     { text: 'Size', sortable: false, value: 'size' },
-
     { text: 'Status', sortable: false, value: 'status' },
-    { text: 'Status-Time', sortable: false, value: 'sTime' },
     { text: 'Error', sortable: false, value: 'error' }
   ]
 
