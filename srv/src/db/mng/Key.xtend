@@ -146,7 +146,7 @@ class Key {
       #{
         ACTIVE -> get(ACTIVE),
         TYPE -> get(TYPE),
-        GROUP -> (GROUP),
+        GROUP -> get(GROUP),
         KEY -> get(KEY),
         VALUE -> tryConvert(get(VALUE), get(TYPE) as String)
       }

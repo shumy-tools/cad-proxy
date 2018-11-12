@@ -5,6 +5,7 @@ import SubjectList from './views/SubjectList.vue'
 import PullList from './views/PullList.vue'
 import PushList from './views/PushList.vue'
 import PendingData from './views/PendingData.vue'
+import Keys from './views/Keys.vue'
 
 Vue.use(Router)
 
@@ -29,6 +30,11 @@ export default new Router({
       path: '/pending-data',
       name: 'pending-data',
       component: PendingData
+    },
+    {
+      path: '/keys',
+      name: 'keys',
+      component: Keys
     },
 
     {

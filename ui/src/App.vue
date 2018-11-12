@@ -3,9 +3,7 @@
     <v-dialog v-model="viewDialog">
       <v-card>
         <v-card-title class="headline grey lighten-2" primary-title>
-          <span>
-            <span class="font-weight-bold">{{selected.edge}}</span>
-          </span>
+          <span class="font-weight-bold">{{selected.edge}}</span>
         </v-card-title>
 
         <v-alert :value="inError" type="error">
@@ -256,7 +254,6 @@ export default class App extends Vue {
   inError = false
   error = "none"
 
-  onLoading = true
   viewDialog = false
   
   validForm = false
@@ -290,11 +287,9 @@ export default class App extends Vue {
   items = { sources: [], targets: [] }
  
   created() {
-    this.onLoading = true
     axios.get(`/api/edges`)
       .then(res => {
         this.items = res.data
-        this.onLoading = false
       }).catch(e => {
         this.error = e.message
         this.inError = true
@@ -308,8 +303,6 @@ export default class App extends Vue {
           let desc = it.substring(splitIndex + 1, it.length)
           return { "name": name, "desc": `(${name}) ${desc}` }
         })
-
-        this.onLoading = false
       }).catch(e => {
         this.error = e.message
         this.inError = true
