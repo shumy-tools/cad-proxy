@@ -80,7 +80,7 @@ export default class PushList extends Vue {
   }
 
   headers = [
-    { text: 'View', sortable: false, value: 'view' },
+    { text: 'View', sortable: false, width: '5px', value: 'view' },
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Target', sortable: false, value: 'target' },
     { text: 'Subjects', sortable: false, value: 'subjects' },

@@ -13,7 +13,13 @@
           <v-list class="list-border">
               <v-list-tile>
                 <v-list-tile-content>
-                  <v-list-tile-title class="title">Series</v-list-tile-title>
+                  <v-list-tile-title class="title" style="height: 100%">
+                    <v-toolbar flat color="white" class="toolbar-p-0">
+                      <v-toolbar-title class="title">Series</v-toolbar-title>
+                      <v-spacer></v-spacer>
+                      <v-btn color="primary" @click="pushItem">push</v-btn>
+                    </v-toolbar>
+                  </v-list-tile-title>
                 </v-list-tile-content>
               </v-list-tile>
 
@@ -55,7 +61,7 @@
           <td>{{ props.item.subjects }}</td>
           <td>{{ props.item.series }}</td>
           <td>
-            <span v-for="m in props.item.modalities" :key="m">{{m}} </span>
+            <span v-for="name in props.item.modalities" :key="name" class="mr-2">({{name}})</span>
           </td>
         </template>
       </v-data-table>
@@ -82,7 +88,7 @@ export default class PendingData extends Vue {
   }
 
   headers = [
-    { text: 'View', sortable: false, value: 'view' },
+    { text: 'View', sortable: false, width: '5px', value: 'view' },
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Target', sortable: false, value: 'target' },
     { text: 'Subjects', sortable: false, value: 'subjects' },
@@ -103,14 +109,17 @@ export default class PendingData extends Vue {
   ]
 
   items = []
-  selected = {}
+  selected: any = {}
 
-  created() {
+  created() { this.load() }
+
+  load() {
     this.onLoading = true
     axios.get(`/api/pending`)
       .then(res => {
         this.items = res.data
         this.onLoading = false
+        this.viewDialog = false
       }).catch(e => {
         this.error = e.message
         this.inError = true
@@ -125,6 +134,15 @@ export default class PendingData extends Vue {
         this.viewDialog = true
         this.onLoading = false
       }).catch(e => {
+        this.error = e.message
+        this.inError = true
+      })
+  }
+
+  pushItem() {
+    this.onLoading = true
+    axios.post(`/api/pending/push`, { "id": this.selected.id, "series": this.selected.series.map(e => e.id) })
+      .then(_ => this.load()).catch(e => {
         this.error = e.message
         this.inError = true
       })

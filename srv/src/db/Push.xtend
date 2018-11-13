@@ -27,6 +27,7 @@ class Push {
       WITH n
       MATCH (t:«Target.NODE»), (e:«Series.NODE»)
         WHERE id(t) = «targetID» AND id(e) IN $series
+        AND e.«Series.MODALITY» IN t.«Target.MODALITIES»
       MERGE (e)<-[:THESE]-(n)-[:TO]->(t)
       RETURN id(n) as id
     ''', map)

@@ -54,7 +54,7 @@
                   <v-select :items="modalities" item-value="name" item-text="desc" v-model="selected.modalities" label="Modalities" multiple
                     :rules="rules.modalities">
                     <template slot="selection" slot-scope="{ item, index }">
-                      <span v-if="index <= 3" class="mr-2">{{ item.name }}</span>
+                      <span v-if="index <= 3" class="mr-2">({{ item.name }})</span>
                       <span v-if="index === 4" class="grey--text caption">(+{{ selected.modalities.length - 4 }} more)</span>
                     </template>
                   </v-select>
@@ -311,10 +311,16 @@ export default class App extends Vue {
 
   openEdge(edge: string, item: any) {
     this.original = item
-    
+
     this.selected = JSON.parse(JSON.stringify(item))
     this.selected.create = false
     this.selected.edge = edge
+
+    // add possible erased modalities from the keys!
+    this.selected.modalities.forEach(name => {
+      if (this.modalities.indexOf(name) === -1)
+        this.modalities.push({ "name": name, "desc": `(${name}) (DELETED)` })
+    })
 
     this.viewDialog = true
     this.inError = false

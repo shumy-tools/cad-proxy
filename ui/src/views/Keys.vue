@@ -14,7 +14,7 @@
               <v-list-tile>
                 <v-list-tile-content>
                   <v-list-tile-title style="height: 100%">
-                    <v-toolbar flat color="white" class="toolbar-pl-0">
+                    <v-toolbar flat color="white" class="toolbar-p-0">
                       <v-toolbar-title class="title">Items</v-toolbar-title>
                       <v-spacer></v-spacer>
                       <v-edit-dialog lazy @open="newItem = ''" @save="addItem" style="width: auto">

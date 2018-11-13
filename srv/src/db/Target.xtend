@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 import java.util.HashSet
 import java.util.Set
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import java.util.List
 
 @FinalFieldsConstructor
 class Target {
@@ -110,7 +111,19 @@ class Target {
     db.cypher('''
       «pendingMatch(Series.Status.READY, null)»
       RETURN id(n) as id, collect(id(e)) as series
+    ''').toSet
+  }
+  
+  def pendingSeries(Long targetID) {
+    val res = db.cypher('''
+      «pendingMatch(Series.Status.READY, targetID)»
+      RETURN collect(id(e)) as series
     ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find pending series for targetID: «targetID»''')
+      
+    return (res.head.get("series") as List<Long>).toSet
   }
   
   def pending() {
@@ -129,7 +142,7 @@ class Target {
   def pendingDetails(Long targetID) {
     val res = db.cypher('''
     «pendingMatch(null, targetID)»
-      WITH n.«UDI» as udi, e {
+      WITH n, e {
         id: id(e),
         subject: u.«Subject.UDI»,
         date: s.«Study.DATE»,
@@ -140,7 +153,7 @@ class Target {
         .«Series.ERROR»
       } as list
       ORDER BY list.date DESC
-      RETURN udi, collect(list) as series
+      RETURN id(n) as id, n.«UDI» as udi, collect(list) as series
     ''')
     
     if (res.empty)

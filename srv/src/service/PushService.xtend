@@ -31,8 +31,8 @@ class PushService {
     val requests = new HashSet<Long>
     store.TARGET.pendingSeries.forEach[
       val targetID = get("id") as Long
-      val seriesIDs = get("series") as List<Long>
-      requests.add(store.PUSH.create(targetID, seriesIDs.toSet))
+      val seriesIDs = get("series") as Set<Long>
+      requests.add(store.PUSH.create(targetID, seriesIDs))
     ]
     
     return requests

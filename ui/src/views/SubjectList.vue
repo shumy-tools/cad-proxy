@@ -98,7 +98,7 @@ export default class SubjectList extends Vue {
   }
 
   headers = [
-    { text: 'View', sortable: false, value: 'view' },
+    { text: 'View', sortable: false, width: '5px', value: 'view' },
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'UDI', sortable: false, value: 'udi' },
     { text: 'Sources', sortable: false, value: 'sources' },

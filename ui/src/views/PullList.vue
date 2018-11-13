@@ -103,7 +103,7 @@ export default class PullList extends Vue {
   }
 
   headers = [
-    { text: 'View', sortable: false, value: 'view' },
+    { text: 'View', sortable: false, width: '5px', value: 'view' },
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Source', sortable: false, value: 'source' },
     { text: 'Subjects', sortable: false, value: 'subjects' },

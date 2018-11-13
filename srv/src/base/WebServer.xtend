@@ -65,6 +65,22 @@ class WebServer {
     store.TARGET.pendingDetails(id)
   }
   
+  def pushPendingData(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val id = if (get("id") === null) null else (get("id") as Double).longValue as Long
+    val series = get("series")
+    
+    if (id === null || series === null)
+      halt(400, "Invalid parameters!")
+    
+    val seriesIDs = (series as List<Double>).map[longValue].toSet
+    store.PUSH.create(id, seriesIDs)
+    
+    return id
+  }
+  
   def getEdges(Request req) {
     store.edges
   }
@@ -72,6 +88,7 @@ class WebServer {
   def setEdge(Request req) {
     val it = json.parse(req.body, Map)
     
+    // parameter parser and validation
     val edge = get("edge") as String
     val id = if (get("id") === null) null else (get("id") as Double).longValue as Long
     val active = get("active") as Boolean
@@ -204,6 +221,7 @@ class WebServer {
       path("/pending")[
         get("", [req, res | getPendingData(req)], json)
         get("/:id", [req, res | getPendingDataDetails(req)], json)
+        post("/push", [req, res | pushPendingData(req)], json)
       ]
       
       path("/subject")[
