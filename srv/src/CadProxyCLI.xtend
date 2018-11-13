@@ -47,6 +47,9 @@ class RCommand {
   @Option(names = #["--key-list"], help = true, description = "List all configuration keys. Order by group.")
   public boolean keyList
   
+  @Option(names = #["--key-reset"], help = true, description = "Reset all configuration keys to default.")
+  public boolean keyReset
+  
   @Option(names = #["--eth"], help = true, description = "Ethernet interface to use for the local DICOM storage service.")
   public String ethName
 }
@@ -78,6 +81,11 @@ class CadProxyCLI {
         return
       }
       
+       if (cmd.keyReset) {
+        keyReset
+        return
+      }
+      
       if (cmd.keyList) {
         keyList
         return
@@ -93,6 +101,12 @@ class CadProxyCLI {
       else
         println(ex.message)
     }
+  }
+
+  def static void keyReset() {
+    val store = Store.setup
+    store.cypher('''MATCH (n:«Key.NODE») DETACH DELETE n''')
+    store.KEY.setupDefault
   }
   
   def static void keyList() {

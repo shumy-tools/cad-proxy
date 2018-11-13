@@ -19,18 +19,16 @@ class Key {
   public static val VALUE               = "value"
   
   def setupDefault() {
-    //db.cypher("MATCH (n:Key) DETACH DELETE n")
+    create("path", "cache", "/cache")
     
-    create("String", "path", "cache", "/cache")
+    create("pull", "interval", 3) // 3 hours interval
+    create("push", "interval", 3) // 3 hours interval
     
-    create("Integer", "pull", "interval", 3) // 3 hours interval
-    create("Integer","push", "interval", 3) // 3 hours interval
+    create("local-aet", "aet", "CAD-PROXY")
+    create("local-aet", "eth-name", "lo")
+    create("local-aet", "port", 1104)
     
-    create("String", "local-aet", "aet", "CAD-PROXY")
-    create("String", "local-aet", "eth-name", "lo")
-    create("Integer","local-aet", "port", 1104)
-    
-    create("Set-Integer", "dicom", "white-list", #{
+    create("dicom", "white-list", #{
       Tag.SOPClassUID,
       
       Tag.PatientOrientation,
@@ -59,7 +57,7 @@ class Key {
       Tag.PlanarConfiguration
     })
     
-    create("Set-String", "dicom", "modalities", #{
+    create("dicom", "modalities", #{
       "CT-Computed Tomography",
       "MR-Magnetic Resonance",
       "XA-X-Ray Angiography",
@@ -68,9 +66,10 @@ class Key {
     })
   }
   
-  def create(String type, String group, String key, Object value) {
-    if(!isValidType(type, value))
-      throw new RuntimeException('''Incorrect (type, vType)=(«type», «value.class.simpleName»)''')
+  def create(String group, String key, Object value) {
+    val type = valueType(value)
+    if(type === null)
+      throw new RuntimeException('''Unsuported type=«value.class.simpleName»''')
     
     val map = #{ TYPE -> type,  GROUP -> group, KEY -> key, VALUE -> value }
     val res = db.cypher('''
@@ -85,9 +84,10 @@ class Key {
     res.head.get("id") as Long
   }
   
-  def set(String type, String group, String key, Object value) {
-    if(!isValidType(type, value))
-      throw new RuntimeException('''Incorrect (type, vType)=(«type», «value.class.simpleName»)''')
+  def set(String group, String key, Object value) {
+    val type = valueType(value)
+    if(type === null)
+      throw new RuntimeException('''Unsuported type=«value.class.simpleName»''')
     
     val map = #{ TYPE -> type, GROUP -> group, KEY -> key, VALUE -> value }
     val res = db.cypher('''
@@ -121,7 +121,7 @@ class Key {
     if (!keyNode.get(ACTIVE) as Boolean)
       throw new RuntimeException('''The (group, key)=(«group», «key») is not active.''')
     
-    return tryConvert(keyNode.get(VALUE), keyNode.get(TYPE) as String) as T
+    return tryConvert(keyNode.get(VALUE)) as T
   }
   
   def <T> T get(String group, String key) {
@@ -148,22 +148,24 @@ class Key {
         TYPE -> get(TYPE),
         GROUP -> get(GROUP),
         KEY -> get(KEY),
-        VALUE -> tryConvert(get(VALUE), get(TYPE) as String)
+        VALUE -> tryConvert(get(VALUE))
       }
     ].toList
   }
   
-  private def isValidType(String type, Object value) {
-    val tList = type.split("-")
-    
-    switch tList.get(0) {
-      case String.simpleName: value.class === String
-      case Integer.simpleName: value.class === Integer
-      case Set.isAssignableFrom(value.class): true//value.class.componentType?.simpleName == tList.get(1)
+  private def valueType(Object value) {
+    val type = value.class
+    switch type {
+      case String,
+      case Integer: "nat"
+      
+      case Set.isAssignableFrom(type): "set"
+      
+      default: null
     }
   }
   
-  private def Object tryConvert(Object value, String toType) {
+  private def Object tryConvert(Object value) {
     val type = value.class
     if (type.array) {
       val Collection<?> array = switch type.componentType {

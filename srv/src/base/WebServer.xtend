@@ -2,13 +2,13 @@ package base
 
 import db.Store
 import java.util.Collections
+import java.util.List
+import java.util.Map
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 import spark.Request
 
 import static spark.Spark.*
-import java.util.Map
-import java.util.List
 
 @FinalFieldsConstructor
 class WebServer {
@@ -20,8 +20,6 @@ class WebServer {
   enum NodeType { SUBJECT, PULL, PUSH }
   
   def getPage(NodeType nt, Request req) {
-    logger.debug("GET ", req.uri)
-    
     // parameter parser and validation
     val page = Integer.parseInt(req.params("page")) - 1
     val pageSize = Integer.parseInt(req.queryParams("pageSize")?: "10")
@@ -41,8 +39,6 @@ class WebServer {
   }
   
   def getDetails(NodeType nt, Request req) {
-    logger.debug("GET ", req.uri)
-    
     // parameter parser and validation
     if (req.params("id") === null)
       halt(400, "Invalid parameters!")
@@ -57,13 +53,10 @@ class WebServer {
   }
   
   def getPendingData(Request req) {
-    logger.debug("GET ", req.uri)
     store.TARGET.pending
   }
   
   def getPendingDataDetails(Request req) {
-    logger.debug("GET ", req.uri)
-    
     // parameter parser and validation
     if (req.params("id") === null)
       halt(400, "Invalid parameters!")
@@ -73,13 +66,10 @@ class WebServer {
   }
   
   def getEdges(Request req) {
-    logger.debug("GET ", req.uri)
     store.edges
   }
   
   def setEdge(Request req) {
-    logger.debug("POST ", req.uri)
-    
     val it = json.parse(req.body, Map)
     
     val edge = get("edge") as String
@@ -115,8 +105,6 @@ class WebServer {
   }
   
   def removeEdge(Request req) {
-    logger.debug("POST ", req.uri)
-    
     // parameter parser and validation
     if (req.params("id") === null)
       halt(400, "Invalid parameters!")
@@ -134,13 +122,10 @@ class WebServer {
   }
   
   def getAllKeys(Request req) {
-    logger.debug("GET ", req.uri)
     store.KEY.all
   }
   
   def getKey(Request req) {
-    logger.debug("GET ", req.uri)
-    
     // parameter parser and validation
     val group = req.params("group") as String
     val key = req.params("key") as String
@@ -149,6 +134,40 @@ class WebServer {
       halt(400, "Invalid parameters!")
     
     store.KEY.get(group, key)
+  }
+  
+  def setKey(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val group = get("group") as String
+    val key = get("key") as String
+    var value = get("value")
+    
+    if (group === null || key === null || value === null)
+      halt(400, "Invalid parameters!")
+    
+    if (value instanceof Double) {
+      value = value.intValue
+    } if (value instanceof String) {
+      try {
+        value = Integer.parseInt(value)
+      } catch (NumberFormatException e) {}
+    } else if (List.isAssignableFrom(value.class)) {
+      value = (value as List<Object>)
+        .map[
+          if (it instanceof Double)
+            intValue
+          else if (it instanceof String) try {
+              Integer.parseInt(it)
+            } catch (NumberFormatException e) { it }
+          else it
+        ]
+        .toSet
+    }
+    
+    //println('''SET («group», «key») = («value.class.simpleName»:«value»)''')
+    store.KEY.set(group, key, value)
   }
   
   def void setup() {
@@ -161,7 +180,7 @@ class WebServer {
     
     path("/api")[
       before[ req, res |
-        logger.info("API call")
+        logger.debug("{} - {}", req.requestMethod, req.uri)
         //if (!authenticated) {
         //  halt(401, "You are not welcome here")
       ]
@@ -173,6 +192,7 @@ class WebServer {
       path("/keys")[
         get("", [req, res | getAllKeys(req)], json)
         get("/:group/:key", [req, res | getKey(req)], json)
+        post("", [req, res | setKey(req)], json)
       ]
       
       path("/edges")[

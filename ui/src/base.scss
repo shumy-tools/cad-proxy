@@ -12,6 +12,10 @@
   border-radius: 0px;
 }
 
+.simple-tr:not(:last-child) {
+  border-bottom: 0px !important;
+}
+
 .zero-opacity:before {
   opacity: 0;
 }
@@ -25,3 +29,7 @@
     background: transparent !important;
   }
 }
+
+.toolbar-pl-0 > .v-toolbar__content{
+  padding-left: 0px;
+} 

@@ -20,8 +20,8 @@ class Server {
   val Store store
   val TransmitService transSrv 
   
-  val PullService pullSrv
-  val PushService pushSrv
+  var PullService pullSrv = null
+  var PushService pushSrv = null
   
   new() {this(null)}
   new(String ethName) {
@@ -29,7 +29,7 @@ class Server {
     this.transSrv = new TransmitService
     
     if(ethName !== null)
-      store.KEY.set("String", "local-aet", "eth-name", ethName)
+      store.KEY.set("local-aet", "eth-name", ethName)
     
     this.pullSrv = new PullService(store)
     this.pushSrv = new PushService(store, transSrv)

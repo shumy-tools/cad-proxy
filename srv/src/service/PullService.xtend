@@ -152,9 +152,8 @@ class PullService {
     val localPort = store.KEY.get("local-aet", "port") as Integer
     
     logger.info("Using inet interface: {}", localEthName)
-    val localInet = Collections.list(NetworkInterface.getByName(localEthName).inetAddresses).filter[
-      siteLocalAddress && isReachable(100)
-    ].head
+    val localInet = Collections.list(NetworkInterface.getByName(localEthName).inetAddresses)
+      .filter[isReachable(100)].head
     
     if (localInet === null)
       throw new RuntimeException("No suitable address found for the interface: " + localEthName)
