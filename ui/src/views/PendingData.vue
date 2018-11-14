@@ -76,7 +76,7 @@ import axios from 'axios';
 @Component
 export default class PendingData extends Vue {
   inError = false
-  error = "none"
+  error = ''
 
   onLoading = true
   viewDialog = false

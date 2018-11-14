@@ -54,7 +54,7 @@ class Server {
     }
     
     // setup REST services
-    new WebServer(store).setup
+    new WebServer(store, pullSrv, pushSrv).setup
   }
   
   def void pullTask() {

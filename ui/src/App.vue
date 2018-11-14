@@ -180,6 +180,20 @@
       </v-tooltip>
 
       <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/dicom-find" class="no-border-radius">
+          <v-icon>fas fa-search</v-icon>
+        </v-btn>
+        <span>DICOM Find</span>
+      </v-tooltip>
+
+      <v-tooltip bottom>
+        <v-btn icon slot="activator" to="/pending-data" class="no-border-radius">
+          <v-icon>fas fa-clipboard-list</v-icon>
+        </v-btn>
+        <span>Pending Data</span>
+      </v-tooltip>
+
+      <v-tooltip bottom>
         <v-btn icon slot="activator" to="/pull-list" class="no-border-radius">
           <v-icon>fas fa-download</v-icon>
         </v-btn>
@@ -194,21 +208,12 @@
       </v-tooltip>
       
       <v-tooltip bottom>
-        <v-btn icon slot="activator" to="/pending-data" class="no-border-radius">
-          <v-icon>fas fa-clipboard-list</v-icon>
-        </v-btn>
-        <span>Pending Data</span>
-      </v-tooltip>
-      
-      <v-tooltip bottom>
         <v-btn icon slot="activator" to="/schedulers" class="no-border-radius">
           <v-icon>fas fa-clock</v-icon>
         </v-btn>
         <span>Schedulers</span>
       </v-tooltip>
 
-      <!--<v-text-field solo-inverted flat class="mt-2" label="Search" prepend-icon="fas fa-search"></v-text-field>-->
-      
       <v-spacer></v-spacer>
 
       <v-toolbar-items>
@@ -317,10 +322,11 @@ export default class App extends Vue {
     this.selected.edge = edge
 
     // add possible erased modalities from the keys!
-    this.selected.modalities.forEach(name => {
-      if (this.modalities.indexOf(name) === -1)
-        this.modalities.push({ "name": name, "desc": `(${name}) (DELETED)` })
-    })
+    if (edge == 'Target')
+      this.selected.modalities.forEach(name => {
+        if (this.modalities.indexOf(name) === -1)
+          this.modalities.push({ "name": name, "desc": `(${name}) (DELETED)` })
+      })
 
     this.viewDialog = true
     this.inError = false

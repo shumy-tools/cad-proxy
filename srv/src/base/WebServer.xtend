@@ -1,12 +1,15 @@
 package base
 
 import db.Store
+import dicom.model.DQuery
 import java.util.Collections
 import java.util.List
 import java.util.Map
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 import spark.Request
+import service.PullService
+import service.PushService
 
 import static spark.Spark.*
 
@@ -15,6 +18,9 @@ class WebServer {
   static val logger = LoggerFactory.getLogger(WebServer)
   
   val Store store
+  val PullService pullSrv
+  val PushService pushSrv
+   
   val json = new JsonTransformer
   
   enum NodeType { SUBJECT, PULL, PUSH }
@@ -100,10 +106,15 @@ class WebServer {
       case "Source": {
         val aet = get("aet") as String
         val host = get("host") as String
-        val port = if (get("port") === null) null else Integer.parseInt(get("port") as String)
+        val rawPort = get("port")
         
-        if (aet === null || host === null || port === null)
+        if (aet === null || host === null || rawPort === null)
           halt(400, "Invalid parameters!")
+        
+        val port = if (rawPort instanceof String)
+            try { Integer.parseInt(rawPort) } catch (NumberFormatException e) { 0 }
+          else if (rawPort instanceof Double)
+            rawPort.intValue
         
         store.SOURCE.set(id, active, aet, host, port)
       }
@@ -183,8 +194,35 @@ class WebServer {
         .toSet
     }
     
-    //println('''SET («group», «key») = («value.class.simpleName»:«value»)''')
     store.KEY.set(group, key, value)
+  }
+  
+  def dicomFind(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val query = get("query") as String
+    
+    if (query === null)
+      halt(400, "Invalid parameters!")
+    
+    // simple query parser - <field>:<value> & ..
+    val items = newImmutableMap(query.split("&").map[
+      val keyValue = split(":")
+      if (keyValue.length !== 2)
+        halt(400, "Invalid query format!")
+      
+      keyValue.get(0).trim -> keyValue.get(1)
+    ])
+    
+    items.forEach[key, value |
+      if (!DQuery.TAGS.containsKey(key))
+        halt(400, "Non existent DICOM Tag: " + key)
+    ]
+    
+    println('''QUERY: «items»''')
+    val dQuery = new DQuery => [ set(items) ]
+    pullSrv.find(dQuery)
   }
   
   def void setup() {
@@ -205,6 +243,8 @@ class WebServer {
       after[req, res |
         res.type("application/json")
       ]
+      
+      post("/dfind", [req, res | dicomFind(req)], json)
       
       path("/keys")[
         get("", [req, res | getAllKeys(req)], json)

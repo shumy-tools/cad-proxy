@@ -84,7 +84,7 @@ import axios from 'axios';
 @Component
 export default class Keys extends Vue {
   inError = false
-  error = "none"
+  error = ''
 
   newValue = null
   newItem = null

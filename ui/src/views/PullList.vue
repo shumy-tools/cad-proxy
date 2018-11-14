@@ -91,7 +91,7 @@ import axios from 'axios';
 @Component
 export default class PullList extends Vue {
   inError = false
-  error = "none"
+  error = ''
 
   onLoading = true
   viewDialog = false

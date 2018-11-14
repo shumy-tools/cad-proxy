@@ -5,6 +5,7 @@ import SubjectList from './views/SubjectList.vue'
 import PullList from './views/PullList.vue'
 import PushList from './views/PushList.vue'
 import PendingData from './views/PendingData.vue'
+import DicomFind from './views/DicomFind.vue'
 import Keys from './views/Keys.vue'
 
 Vue.use(Router)
@@ -30,6 +31,11 @@ export default new Router({
       path: '/pending-data',
       name: 'pending-data',
       component: PendingData
+    },
+    {
+      path: '/dicom-find',
+      name: 'dicom-find',
+      component: DicomFind
     },
     {
       path: '/keys',
