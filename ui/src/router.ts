@@ -6,7 +6,8 @@ import PullList from './views/PullList.vue'
 import PushList from './views/PushList.vue'
 import PendingData from './views/PendingData.vue'
 import DicomFind from './views/DicomFind.vue'
-import Keys from './views/Keys.vue'
+import Settings from './views/Settings.vue'
+import Model from './views/Model.vue'
 
 Vue.use(Router)
 
@@ -38,9 +39,14 @@ export default new Router({
       component: DicomFind
     },
     {
-      path: '/keys',
-      name: 'keys',
-      component: Keys
+      path: '/settings',
+      name: 'settings',
+      component: Settings
+    },
+    {
+      path: '/model',
+      name: 'model',
+      component: Model
     },
 
     {

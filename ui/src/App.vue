@@ -73,18 +73,6 @@
 
     <v-navigation-drawer fixed clipped class="grey lighten-4" app v-model="drawer">
       <v-list dense class="grey lighten-4">
-        
-        <!--DICOM Section-->
-        <v-list-tile>
-          <v-list-tile-action>
-            <v-icon color="primary">fas fa-search</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <router-link tag="button" to="/dicom-find">DICOM Find</router-link>
-          </v-list-tile-content>
-        </v-list-tile>
-
-        <v-divider dark class="my-2"></v-divider>
 
         <!--Sources Section-->
         <v-layout row align-center>
@@ -140,31 +128,39 @@
 
         <v-divider dark class="my-2"></v-divider>
         
-        <!--Settings Section-->
+        <!--Administration Section-->
         <v-layout row align-center>
           <v-flex xs6>
-            <v-subheader class="subheading">Settings</v-subheader>
+            <v-subheader class="subheading">Administration</v-subheader>
           </v-flex>
         </v-layout>
 
           <v-list-tile>
             <v-list-tile-action>
-              <v-icon color="primary">fas fa-cog</v-icon>
+              <v-icon small color="primary">fas fa-cog</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <router-link tag="button" to="/keys">Keys</router-link>
+              <router-link tag="button" to="/settings">Settings</router-link>
             </v-list-tile-content>
           </v-list-tile>
 
           <v-list-tile>
             <v-list-tile-action>
-              <v-icon color="primary">fas fa-user-circle</v-icon>
+              <v-icon small color="primary">fas fa-user-circle</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
               <router-link tag="button" to="/users">Users</router-link>
             </v-list-tile-content>
           </v-list-tile>
 
+          <v-list-tile>
+            <v-list-tile-action>
+              <v-icon small color="primary">fas fa-project-diagram</v-icon>
+            </v-list-tile-action>
+            <v-list-tile-content>
+              <router-link tag="button" to="/model">Model</router-link>
+            </v-list-tile-content>
+          </v-list-tile>
       </v-list>
     </v-navigation-drawer>
 

@@ -6,9 +6,10 @@ import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializer
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import spark.ResponseTransformer
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import org.neo4j.graphdb.Node
+import spark.ResponseTransformer
 
 class JsonTransformer implements ResponseTransformer {
   val Gson gson
@@ -18,18 +19,19 @@ class JsonTransformer implements ResponseTransformer {
   val tf = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
   
   val JsonSerializer<LocalDateTime> ldtSer = [src, type, ctx |
-    val str = src?.format(dtf)
-    return new JsonPrimitive(str)
+    new JsonPrimitive(src.format(dtf))
   ]
   
   val JsonSerializer<LocalDate> ldSer = [src, type, ctx |
-    val str = src?.format(df)
-    return new JsonPrimitive(str)
+    new JsonPrimitive(src.format(df))
   ]
   
   val JsonSerializer<LocalTime> ltSer = [src, type, ctx |
-    val str = src?.format(tf)
-    return new JsonPrimitive(str)
+    new JsonPrimitive(src.format(tf))
+  ]
+  
+  val JsonSerializer<Node> nodeSer = [src, type, ctx |
+    new JsonPrimitive('''Node[«src.id»]''')
   ]
   
   new() {
@@ -37,6 +39,7 @@ class JsonTransformer implements ResponseTransformer {
       .registerTypeAdapter(LocalDateTime, ldtSer)
       .registerTypeAdapter(LocalDate, ldSer)
       .registerTypeAdapter(LocalTime, ltSer)
+      .registerTypeHierarchyAdapter(Node, nodeSer)
       .create
   }
   

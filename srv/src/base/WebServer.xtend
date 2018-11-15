@@ -7,9 +7,9 @@ import java.util.List
 import java.util.Map
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
-import spark.Request
 import service.PullService
 import service.PushService
+import spark.Request
 
 import static spark.Spark.*
 
@@ -22,6 +22,8 @@ class WebServer {
   val PushService pushSrv
    
   val json = new JsonTransformer
+  
+  val excludedKeys = #[ "create", "merge", "delete", "remove", "set", "drop", "call", "load", "detach", "cypher", "using" ]
   
   enum NodeType { SUBJECT, PULL, PUSH }
   
@@ -202,7 +204,6 @@ class WebServer {
     
     // parameter parser and validation
     val query = get("query") as String
-    
     if (query === null)
       halt(400, "Invalid parameters!")
     
@@ -220,9 +221,40 @@ class WebServer {
         halt(400, "Non existent DICOM Tag: " + key)
     ]
     
-    println('''QUERY: «items»''')
     val dQuery = new DQuery => [ set(items) ]
     pullSrv.find(dQuery)
+  }
+  
+  def cypherQuery(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val query = get("query") as String
+    if (query === null)
+      halt(400, "Invalid parameters!")
+    
+    // read-only queries. No modification operations are allowed.
+    // this is not an advanced security feature. It's just to avoid administrator input mistakes.
+    val lQuery = query.toLowerCase
+    if (excludedKeys.exists[
+      val index = lQuery.indexOf(it)
+      !(index < 0 || index > 0 && lQuery.charAt(index - 1) == '.'.charAt(0))
+    ])
+      halt(400, "Read-only mode! Try to remove possible cypher modification keywords.")
+    
+    val results = try {
+      store.cypher(query)
+    } catch (Throwable e) {
+      halt(400, e.message)
+      return null
+    }
+    
+    val headers = if (!results.empty)
+        results.head.keySet.toList
+      else
+        Collections.EMPTY_LIST
+    
+    return #{ "headers" -> headers, "results" -> results }
   }
   
   def void setup() {
@@ -245,6 +277,7 @@ class WebServer {
       ]
       
       post("/dfind", [req, res | dicomFind(req)], json)
+      post("/cypher", [req, res | cypherQuery(req)], json)
       
       path("/keys")[
         get("", [req, res | getAllKeys(req)], json)

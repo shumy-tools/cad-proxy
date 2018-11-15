@@ -5,6 +5,7 @@ import db.mng.Key
 import db.mng.Log
 import java.io.FilePermission
 import java.util.Map
+import java.util.Collections
 
 class Store {
   val NeoDB db
@@ -32,11 +33,11 @@ class Store {
   }
   
   def cypher(String cypher) {
-    db.cypher(cypher)
+    db.cypher(cypher)?.toList ?: Collections.EMPTY_LIST
   }
   
   def cypher(String cypher, Map<String, ?> params) {
-    db.cypher(cypher, params)
+    db.cypher(cypher, params)?.toList ?: Collections.EMPTY_LIST
   }
   
   def edges() {

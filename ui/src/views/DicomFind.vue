@@ -6,9 +6,13 @@
 
     <v-card class="elevation-1">
       <v-card-title class="title">
-        DICOM Find
-        <v-spacer></v-spacer>
-        <v-text-field v-model="query" label="Find" :error-messages="queryError" @keyup.enter="find"></v-text-field>
+        <span class="mr-5">DICOM Find</span>
+        <v-textarea auto-grow autofocus clearable clear-icon="fas fa-eraser" rows="1" label="Find"
+          v-model="query" :error-messages="queryError" @keydown.shift.enter.exact.prevent @keyup.shift.enter="find"></v-textarea>
+        <v-tooltip bottom>
+          <v-btn slot="activator" color="primary" @click="find">go</v-btn>
+          <span>Shift+Enter to submit</span>
+        </v-tooltip>
       </v-card-title>
       
       <v-data-table hide-actions select-all item-key="index" :headers="headers" :items="items" :loading="onLoading">
@@ -19,10 +23,7 @@
               <v-checkbox :input-value="props.selected" primary hide-details></v-checkbox>
             </td>
             <td>{{ props.item.header ? props.item.source : '-'}}</td>
-            <td>{{ props.item.pid }}</td>
-            <td>{{ props.item.birthday }}</td>
-            <td>{{ props.item.sex }}</td>
-            <td>{{ props.item.series }}</td>
+            <td v-for="h in headers" v-if="h.value != 'source'" :key="h.value">{{ props.item[h.value] }}</td>
           </tr>
         </template>
       </v-data-table>
@@ -42,12 +43,7 @@ export default class DicomFind extends Vue {
 
   onLoading = false
   query = 'StudyDate: 20170130'
-
-  pagination = {
-    page: 1,
-    rowsPerPage: 10,
-    totalItems: 0
-  }
+  // PatientBirthDate:19520706
 
   headers = [
     { text: 'Source', sortable: false, value: 'source' },

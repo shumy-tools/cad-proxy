@@ -82,7 +82,7 @@ import { Component, Watch, Vue } from 'vue-property-decorator';
 import axios from 'axios';
 
 @Component
-export default class Keys extends Vue {
+export default class Settings extends Vue {
   inError = false
   error = ''
 

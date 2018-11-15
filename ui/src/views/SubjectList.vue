@@ -19,11 +19,7 @@
 
               <v-data-table hide-actions :headers="pHeaders" :items="selected.sources">
                 <template slot="items" slot-scope="props">
-                  <td>{{ props.item.id }}</td>
-                  <td>{{ props.item.source }}</td>
-                  <td>{{ props.item.pid }}</td>
-                  <td>{{ props.item.sex }}</td>
-                  <td>{{ props.item.birthday }}</td>
+                  <td v-for="h in pHeaders" :key="h.value">{{ props.item[h.value] }}</td>
                 </template>
               </v-data-table>
           </v-list>
@@ -38,12 +34,7 @@
 
               <v-data-table hide-actions :headers="eHeaders" :items="selected.series">
                 <template slot="items" slot-scope="props">
-                  <td>{{ props.item.id }}</td>
-                  <td>{{ props.item.uid }}</td>
-                  <td>{{ props.item.modality }}</td>
-                  <td>{{ props.item.eligible }}</td>
-                  <td>{{ props.item.size }}</td>
-                  <td>{{ props.item.status }}</td>
+                  <td v-for="h in eHeaders" :key="h.value">{{ props.item[h.value] }}</td>
                 </template>
               </v-data-table>
             </v-list-group>
@@ -68,11 +59,7 @@
           <td>
             <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
           </td>
-          <td>{{ props.item.id }}</td>
-          <td>{{ props.item.udi }}</td>
-          <td>{{ props.item.sources }}</td>
-          <td>{{ props.item.active }}</td>
-          <td>{{ props.item.aTime }}</td>
+          <td v-for="h in headers" v-if="h.value != 'view'" :key="h.value">{{ props.item[h.value] }}</td>
         </template>
       </v-data-table>
     </v-card>

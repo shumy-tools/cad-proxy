@@ -30,6 +30,7 @@ skinparam note {
 
 
 class Source {
+  removed: bool
   active: bool
   a-time: dt
   ..
@@ -106,6 +107,7 @@ note top
 end note
 
 class Target {
+  removed: bool
   active: bool
   a-time: dt
   ..
