@@ -49,11 +49,11 @@ abstract class DObject {
 class DPatient {
   public static val RL = DQuery.RetrieveLevel.PATIENT
   
-  public static val ID = new DField(String, "P-ID", Tag.PatientID, VR.LO)
-  public static val NAME = new DField(String, "P-NAME", Tag.PatientName, VR.PN)
-  public static val SEX = new DField(String, "P-SEX", Tag.PatientSex, VR.CS)
-  public static val BIRTHDAY = new DField(LocalDate, "P-BIRTHDAY", Tag.PatientBirthDate, VR.DA)
-  public static val STUDY_COUNT = new DField(Integer, "P-STUDY-COUNT", Tag.NumberOfPatientRelatedStudies, VR.IS)
+  public static val ID = new DField(String, Tag.PatientID, VR.LO)
+  public static val NAME = new DField(String, Tag.PatientName, VR.PN)
+  public static val SEX = new DField(String, Tag.PatientSex, VR.CS)
+  public static val BIRTHDAY = new DField(LocalDate, Tag.PatientBirthDate, VR.DA)
+  public static val STUDY_COUNT = new DField(Integer, Tag.NumberOfPatientRelatedStudies, VR.IS)
   
   public static val DEFAULT = #[ID, NAME, SEX, dicom.model.DPatient.BIRTHDAY] as List<? extends DField<?>>
 }
@@ -61,11 +61,11 @@ class DPatient {
 class DStudy {
   public static val RL = DQuery.RetrieveLevel.STUDY
   
-  public static val UID = new DField(String, "S-UID", Tag.StudyInstanceUID, VR.UI)
-  public static val DATE = new DField(LocalDate, "S-DATE", Tag.StudyDate, VR.DA)
-  public static val TIME = new DField(LocalTime, "S-TIME", Tag.StudyTime, VR.TM)
-  public static val DESCRIPTION = new DField(String, "S-DESCRIPTION", Tag.StudyDescription, VR.LO)
-  public static val SERIES_COUNT = new DField(Integer, "S-SERIE-COUNT", Tag.NumberOfStudyRelatedSeries, VR.IS)
+  public static val UID = new DField(String, Tag.StudyInstanceUID, VR.UI)
+  public static val DATE = new DField(LocalDate, Tag.StudyDate, VR.DA)
+  public static val TIME = new DField(LocalTime, Tag.StudyTime, VR.TM)
+  public static val DESCRIPTION = new DField(String, Tag.StudyDescription, VR.LO)
+  public static val SERIES_COUNT = new DField(Integer, Tag.NumberOfStudyRelatedSeries, VR.IS)
   
   public static val DEFAULT = #[DPatient.ID, UID, DATE] as List<? extends DField<?>>
 }
@@ -73,18 +73,18 @@ class DStudy {
 class DSeries {
   public static val RL = DQuery.RetrieveLevel.SERIES
   
-  public static val UID = new DField(String, "E-UID", Tag.SeriesInstanceUID, VR.UI)
-  public static val NUMBER = new DField(Integer, "E-NUMBER", Tag.SeriesNumber, VR.IS)
-  public static val DATE = new DField(LocalDate, "S-DATE", Tag.SeriesDate, VR.DA)
-  public static val TIME = new DField(LocalTime, "S-TIME", Tag.SeriesTime, VR.TM)
-  public static val MODALITY = new DField(String, "E-MODALITY", Tag.Modality, VR.CS)
+  public static val UID = new DField(String, Tag.SeriesInstanceUID, VR.UI)
+  public static val NUMBER = new DField(Integer, Tag.SeriesNumber, VR.IS)
+  public static val DATE = new DField(LocalDate, Tag.SeriesDate, VR.DA)
+  public static val TIME = new DField(LocalTime, Tag.SeriesTime, VR.TM)
+  public static val MODALITY = new DField(String, Tag.Modality, VR.CS)
   
-  public static val LATERALITY = new DField(String, "E-LATERALITY", Tag.Laterality, VR.CS)
-  public static val MANUFACTURER = new DField(String, "E-MANUFACTURER", Tag.Manufacturer, VR.LO)
-  public static val MODEL = new DField(String, "E-MODEL", Tag.ManufacturerModelName, VR.LO)
+  public static val LATERALITY = new DField(String, Tag.Laterality, VR.CS)
+  public static val MANUFACTURER = new DField(String, Tag.Manufacturer, VR.LO)
+  public static val MODEL = new DField(String, Tag.ManufacturerModelName, VR.LO)
   
-  public static val DESCRIPTION = new DField(String, "E-DESCRIPTION", Tag.SeriesDescription, VR.LO)
-  public static val IMAGE_COUNT = new DField(Integer, "E-IMAGE-COUNT", Tag.NumberOfSeriesRelatedInstances, VR.IS)
+  public static val DESCRIPTION = new DField(String, Tag.SeriesDescription, VR.LO)
+  public static val IMAGE_COUNT = new DField(Integer, Tag.NumberOfSeriesRelatedInstances, VR.IS)
   
   public static val DEFAULT = #[DPatient.ID, DStudy.UID, UID, NUMBER, DATE, TIME, MODALITY, LATERALITY] as List<? extends DField<?>>
 }
@@ -92,14 +92,14 @@ class DSeries {
 class DImage {
   public static val RL = DQuery.RetrieveLevel.IMAGE
   
-  public static val UID = new DField(String, "I-UID", Tag.SOPInstanceUID, VR.UI)
-  public static val NUMBER = new DField(Integer, "I-NUMBER", Tag.InstanceNumber, VR.IS)
+  public static val UID = new DField(String, Tag.SOPInstanceUID, VR.UI)
+  public static val NUMBER = new DField(Integer, Tag.InstanceNumber, VR.IS)
   
-  public static val CONTENT_DATE = new DField(LocalDate, "I-CONTENT-DATE", Tag.ContentDate, VR.DA)
-  public static val CONTENT_TIME = new DField(LocalTime, "I-CONTENT-TIME", Tag.ContentTime, VR.TM)
+  public static val CONTENT_DATE = new DField(LocalDate, Tag.ContentDate, VR.DA)
+  public static val CONTENT_TIME = new DField(LocalTime, Tag.ContentTime, VR.TM)
   
-  public static val ACQ_DATE = new DField(LocalDate, "I-ACQ-DATE", Tag.AcquisitionDate, VR.DA)
-  public static val ACQ_TIME = new DField(LocalTime, "I-ACQ-TIME", Tag.AcquisitionTime, VR.TM)
+  public static val ACQ_DATE = new DField(LocalDate, Tag.AcquisitionDate, VR.DA)
+  public static val ACQ_TIME = new DField(LocalTime, Tag.AcquisitionTime, VR.TM)
   
   public static val DEFAULT = #[DPatient.ID, DStudy.UID, DSeries.UID, UID, NUMBER] as List<? extends DField<?>>
 }

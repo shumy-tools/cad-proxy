@@ -8,20 +8,17 @@
       <v-card-title class="title">
         <span class="mr-5">DICOM Find</span>
         <v-textarea auto-grow autofocus clearable clear-icon="fas fa-eraser" rows="1" label="Find"
-          v-model="query" :error-messages="queryError" @keydown.shift.enter.exact.prevent @keyup.shift.enter="find"></v-textarea>
+          v-model="query" :error-messages="queryError" @keydown.tab="tab($event)" @keydown.shift.enter.exact.prevent @keyup.shift.enter="find"></v-textarea>
         <v-tooltip bottom>
           <v-btn slot="activator" color="primary" @click="find">go</v-btn>
           <span>Shift+Enter to submit</span>
         </v-tooltip>
       </v-card-title>
       
-      <v-data-table hide-actions select-all item-key="index" :headers="headers" :items="items" :loading="onLoading">
+      <v-data-table hide-actions item-key="index" :headers="headers" :items="items" :loading="onLoading">
         <v-progress-linear slot="progress" indeterminate></v-progress-linear>
         <template slot="items" slot-scope="props">
           <tr :class="props.item.header ? 'grey lighten-2 simple-tr' : 'simple-tr'">
-            <td>
-              <v-checkbox :input-value="props.selected" primary hide-details></v-checkbox>
-            </td>
             <td>{{ props.item.header ? props.item.source : '-'}}</td>
             <td v-for="h in headers" v-if="h.value != 'source'" :key="h.value">{{ props.item[h.value] }}</td>
           </tr>
@@ -42,15 +39,14 @@ export default class DicomFind extends Vue {
   queryError = ''
 
   onLoading = false
-  query = 'StudyDate: 20170130'
-  // PatientBirthDate:19520706
+  query = ''
 
   headers = [
     { text: 'Source', sortable: false, value: 'source' },
     { text: 'PatientID', sortable: false, value: 'pid' },
     { text: 'Birthday', sortable: false, value: 'birthday' },
     { text: 'Sex', sortable: false, value: 'sex' },
-    { text: 'Series', sortable: false, value: 'series' },
+    { text: 'Series', sortable: false, value: 'series' }
   ]
 
   items = []
@@ -72,6 +68,15 @@ export default class DicomFind extends Vue {
           this.inError = true
         }
       })
+  }
+
+  tab(e: KeyboardEvent) {
+    e.preventDefault()
+    let trg = e.target as HTMLTextAreaElement
+
+    let sel = trg.selectionStart
+    this.query = this.query.substring(0, sel) + "  " + this.query.substring(sel, this.query.length)
+    setTimeout(_ => trg.selectionStart = trg.selectionEnd = sel + 2, 1)
   }
 
   private transform(results: {
