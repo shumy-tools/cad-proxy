@@ -55,9 +55,8 @@ note bottom
 end note
 
 class Patient {
+  removed: bool
   pid: str
-  sex: enum
-  birthday: date
 }
 
 class Subject {
@@ -65,6 +64,8 @@ class Subject {
   a-time: dt
   ..
   udi: str
+  sex: enum
+  birthday: date
 }
 
 class Study {

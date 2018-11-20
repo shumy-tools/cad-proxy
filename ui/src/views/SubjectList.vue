@@ -59,7 +59,10 @@
           <td>
             <v-icon small @click="viewItem(props.item)">far fa-eye</v-icon>
           </td>
-          <td v-for="h in headers" v-if="h.value != 'view'" :key="h.value">{{ props.item[h.value] }}</td>
+          <td>
+            <router-link tag="a" :to="`/subject?udi=${props.item.udi}`">{{ props.item.udi }}</router-link>
+          </td>
+          <td v-for="h in headers" v-if="h.value != 'view' && h.value != 'udi'" :key="h.value">{{ props.item[h.value] }}</td>
         </template>
       </v-data-table>
     </v-card>
@@ -86,8 +89,9 @@ export default class SubjectList extends Vue {
 
   headers = [
     { text: 'View', sortable: false, width: '5px', value: 'view' },
-    { text: 'ID', sortable: false, value: 'id' },
     { text: 'UDI', sortable: false, value: 'udi' },
+    { text: 'Sex', sortable: false, value: 'sex' },
+    { text: 'Birthday', sortable: false, value: 'birthday' },
     { text: 'Sources', sortable: false, value: 'sources' },
     { text: 'Active', sortable: false, value: 'active' },
     { text: 'Active-Since', sortable: false, value: 'aTime' }
@@ -96,9 +100,7 @@ export default class SubjectList extends Vue {
   pHeaders = [
     { text: 'ID', sortable: false, value: 'id' },
     { text: 'Source', sortable: false, value: 'source' },
-    { text: 'PatientID', sortable: false, value: 'pid' },
-    { text: 'Sex', sortable: false, value: 'sex' },
-    { text: 'Birthday', sortable: false, value: 'birthday' }
+    { text: 'PatientID', sortable: false, value: 'pid' }
   ]
 
   eHeaders = [

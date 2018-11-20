@@ -3,6 +3,7 @@ package db
 import java.time.LocalDateTime
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import java.util.Set
+import java.time.LocalDate
 
 @FinalFieldsConstructor
 class Subject {
@@ -13,19 +14,42 @@ class Subject {
   public static val A_TIME            = "aTime"
   
   public static val UDI               = "udi"
+  public static val SEX               = "sex"
+  public static val BIRTHDAY          = "birthday"
   
-  def Long create(String udi) {
+  def Long create(String udi, String sex, LocalDate birthday) {
     val map = #{ UDI -> udi, A_TIME -> LocalDateTime.now}
     val res = db.cypher('''
       MERGE (n:«NODE» {«UDI»: $«UDI»})
         ON CREATE SET
           n.«ACTIVE» = true,
           n.«A_TIME» = $«A_TIME»,
-          n.«UDI» = $«UDI»
+          n.«UDI» = $«UDI»,
+          n.«SEX» = $«SEX»,
+          n.«BIRTHDAY» = $«BIRTHDAY»
       RETURN id(n) as id
     ''', map)
     
     res.head.get("id") as Long
+  }
+  
+  def get(String udi) {
+    val map = #{ UDI -> udi }
+    val res = db.cypher('''
+      MATCH (n:«NODE» {«UDI»: $«UDI»})
+      RETURN
+        id(n) as id,
+        n.«UDI» as «UDI»,
+        n.«ACTIVE» as «ACTIVE»,
+        n.«A_TIME» as «A_TIME»,
+        n.«SEX» as «SEX»,
+        n.«BIRTHDAY» as «BIRTHDAY»
+    ''', map)
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to get subject: «udi»''')
+    
+    res.head
   }
   
   def void is(Long subjectID, Long patientID) {
@@ -34,6 +58,52 @@ class Subject {
         WHERE id(n) = «subjectID» AND id(p) = «patientID»
       MERGE (n)-[:IS]->(p)
     ''')
+  }
+  
+  def associate(String udi, String source, String pid) {
+    val map = #{ "udi" -> udi, "source" -> source, "pid" -> pid }
+    val res = db.cypher('''
+      MATCH (n:«NODE»), (s:«Source.NODE»)
+        WHERE n.«UDI» = $udi AND s.«Source.AET» = $source
+      MERGE (p:«Patient.NODE» {«Patient.PID»: $pid})-[:FROM]->(s)
+        ON MATCH
+          SET p.«Patient.REMOVED» = false
+      MERGE (n)-[:IS]->(p)
+      RETURN id(p) as id
+    ''', map)
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to associate (udi, source, pid): («udi», «source», «pid»)''')
+    
+    res.head.get("id") as Long
+  }
+  
+  def deAssociate(String udi, String source, String pid) {
+    val map = #{ "udi" -> udi, "source" -> source, "pid" -> pid }
+    val res = db.cypher('''
+      MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
+        WHERE n.«UDI» = $udi AND p.«Patient.PID» = $pid AND s.«Source.AET» = $source
+      SET p.«Patient.REMOVED» = true
+      RETURN id(p) as id
+    ''', map)
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to deAssociate (udi, source, pid): («udi», «source», «pid»)''')
+    
+    res.head.get("id") as Long
+  }
+  
+  def associations(String udi) {
+    val map = #{ UDI -> udi}
+    val res = db.cypher('''
+      MATCH (n:«NODE» {«UDI»: $udi})-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
+        WHERE p.«Patient.REMOVED» = false
+      RETURN
+        s.«Source.AET» as source,
+        p.«Patient.PID» as pid
+    ''', map)
+    
+    return res.toList
   }
   
   def void consent(Long subjectID, Long targetID) {
@@ -48,7 +118,7 @@ class Subject {
     val map = #{ "pid" -> patientID }
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
-        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» = $pid
+        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» = $pid AND p.«Patient.REMOVED» = false
       RETURN id(n) as id
     ''', map)
     
@@ -60,7 +130,7 @@ class Subject {
     val map = #{ "pids" -> patientIDs }
     val res = db.cypher('''
       MATCH (n:«NODE»)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE»)
-        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» IN $pids
+        WHERE n.«ACTIVE» = true AND id(s) = «sourceID» AND p.«Patient.PID» IN $pids AND p.«Patient.REMOVED» = false
       RETURN count(s) as size
     ''', map)
     
@@ -71,12 +141,15 @@ class Subject {
     db.cypher('''
       MATCH (n:«NODE»)
       OPTIONAL MATCH (n)-[:IS]->(p:«Patient.NODE»)
+        WHERE p.«Patient.REMOVED» = false
       WITH count(DISTINCT n) as total, n {
         id: id(n),
         sources: count(DISTINCT p),
         .«UDI»,
         .«ACTIVE»,
-        .«A_TIME»
+        .«A_TIME»,
+        .«SEX»,
+        .«BIRTHDAY»
       } as list
       ORDER BY list.«A_TIME» DESC SKIP «skip» LIMIT «limit»
       RETURN
@@ -88,12 +161,10 @@ class Subject {
     val res = db.cypher('''
       MATCH (n:«NODE») WHERE id(n) = «subjectID»
       RETURN n.«UDI» as udi,
-        [(n)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE») | p {
+        [(n)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE») WHERE p.«Patient.REMOVED» = false | p {
           id: id(p),
           source: s.«Source.AET»,
-          .«Patient.PID»,
-          .«Patient.SEX»,
-          .«Patient.BIRTHDAY»
+          .«Patient.PID»
         }] as sources,
         
         [(n)-[:HAS*]->(e:«Series.NODE») | e {

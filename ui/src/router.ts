@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
+import Subject from './views/Subject.vue'
 import SubjectList from './views/SubjectList.vue'
 import PullList from './views/PullList.vue'
 import PushList from './views/PushList.vue'
@@ -18,6 +19,12 @@ export default new Router({
       name: 'subject-list',
       component: SubjectList
     },
+    {
+      path: '/subject',
+      name: 'subject',
+      component: Subject
+    },
+
     {
       path: '/pull-list',
       name: 'pull-list',

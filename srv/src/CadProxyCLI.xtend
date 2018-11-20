@@ -23,6 +23,7 @@ import service.PushService
 import service.TransmitService
 
 import static java.security.Policy.*
+import java.time.LocalDate
 
 @Command(
   name = "cadp", footer = "Copyright(c) 2017",
@@ -40,6 +41,9 @@ class RCommand {
   
   @Option(names = #["-s", "--server"], help = true, description = "Run the server.")
   public boolean server
+  
+  @Option(names = #["-w", "--write"], help = true, description = "Enable write mode in UI Cypher Queries.")
+  public boolean write
   
   @Option(names = #["-ns", "--no-schedule"], help = true, description = "Disable pull/push scheduled tasks.")
   public boolean noSchedule
@@ -75,6 +79,9 @@ class CadProxyCLI {
     System.setProperty("dataPath", dataPath)
     System.setProperty("dbPath", dbPath)
     
+    System.setProperty("write", cmd.write.toString)
+    System.setProperty("noSchedule", cmd.noSchedule.toString)
+    
     try {
       if (cmd.help) {
         CommandLine.usage(cmd, System.out)
@@ -92,7 +99,7 @@ class CadProxyCLI {
       }
       
       if (cmd.server) {
-        new Server(cmd.ethName).run(cmd.noSchedule)
+        new Server(cmd.ethName).run
         return
       }
     } catch (Throwable ex) {
@@ -139,7 +146,7 @@ class CadProxyCLI {
     store.cypher("MATCH (n:Subject) DETACH DELETE n")
     
     val sourceID = store.SOURCE.idFromAET("DICOOGLE-STORAGE")
-    val subjectID = store.SUBJECT.create(UUID.randomUUID.toString)
+    val subjectID = store.SUBJECT.create(UUID.randomUUID.toString, "M", LocalDate.of(1981, 1, 28))
     
     //consent all targets
     store.TARGET.all.forEach[
@@ -149,8 +156,8 @@ class CadProxyCLI {
     val dSrv = new DLocal("MICAEL", "192.168.21.250", 1104, null)
     val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
     
-    con.find(new DQuery, DPatient.ID, DPatient.SEX, DPatient.BIRTHDAY).forEach[
-      val patientID = store.PATIENT.create(sourceID, get(DPatient.ID), get(DPatient.SEX), get(DPatient.BIRTHDAY))
+    con.find(new DQuery, DPatient.ID).forEach[
+      val patientID = store.PATIENT.create(sourceID, get(DPatient.ID))
       store.SUBJECT.is(subjectID, patientID)
     ]
     

@@ -35,7 +35,8 @@ class Server {
     this.pushSrv = new PushService(store, transSrv)
   }
   
-  def run(boolean noSchedule) {
+  def run() {
+    val noSchedule = Boolean.getBoolean("noSchedule")
     if (!noSchedule) {
       val pullInterval = store.KEY.get("pull", "interval") as Integer
       val pushInterval = store.KEY.get("push", "interval") as Integer

@@ -26,6 +26,7 @@ import org.dcm4che2.data.Tag
 import org.dcm4che2.data.VR
 import org.dcm4che2.io.DicomOutputStream
 import org.slf4j.LoggerFactory
+import java.util.ArrayList
 
 class FindResult {
   public val Map<String, Object> results
@@ -201,6 +202,31 @@ class PullService {
         store.LOG.exception(PullService, ex)
       }
     ]
+  }
+  
+  def List<Map<String, Object>> patientFind(DQuery query) {
+    logger.debug("Patient-Find : {}", query)
+    
+    val results = new ArrayList<Map<String, Object>>
+    store.SOURCE.all.forEach[
+      val aet = get("aet") as String
+      logger.debug("Patient-Find using source: {}", aet)
+      
+      val con = local.connect(aet, get("host") as String, get("port") as Integer)
+      
+      val patientRes = con.find(DQuery.RetrieveLevel.PATIENT, query, DPatient.ID, DPatient.NAME, DPatient.SEX, DPatient.BIRTHDAY)
+      patientRes.forEach[
+        results.add(#{
+          "source" -> aet,
+          "pid" -> get(DPatient.ID),
+          "name" -> get(DPatient.NAME),
+          "sex" -> get(DPatient.SEX),
+          "birthday" -> get(DPatient.BIRTHDAY)
+        })
+      ]
+    ]
+    
+    return results
   }
   
   def FindResult find(DQuery query) {

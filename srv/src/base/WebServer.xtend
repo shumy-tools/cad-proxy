@@ -5,27 +5,88 @@ import dicom.model.DQuery
 import java.util.Collections
 import java.util.List
 import java.util.Map
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.slf4j.LoggerFactory
 import service.PullService
 import service.PushService
 import spark.Request
 
 import static spark.Spark.*
+import java.util.HashMap
 
-@FinalFieldsConstructor
 class WebServer {
   static val logger = LoggerFactory.getLogger(WebServer)
   
   val Store store
   val PullService pullSrv
   val PushService pushSrv
-   
+  
+  val List<String> excludedKeys 
   val json = new JsonTransformer
   
-  val excludedKeys = #[ "create", "merge", "delete", "remove", "set", "drop", "call", "load", "detach", "cypher", "using" ]
+  val tagConverter = #{
+    "pid" -> "PatientID",
+    "name" -> "PatientName",
+    "sex" -> "PatientSex",
+    "birthday" -> "PatientBirthDate"
+  } 
   
   enum NodeType { SUBJECT, PULL, PUSH }
+  
+  new(Store store, PullService pullSrv, PushService pushSrv) {
+    this.store = store
+    this.pullSrv = pullSrv
+    this.pushSrv = pushSrv
+    
+    val write = Boolean.getBoolean("write")
+    this.excludedKeys = if (write)
+      #[ "drop", "call", "load", "detach", "cypher", "using" ]
+      else
+      #[ "create", "merge", "delete", "remove", "set", "drop", "call", "load", "detach", "cypher", "using" ]
+  }
+  
+  def getSubject(Request req) {
+    // parameter parser and validation
+    val udi = req.params("udi")
+    if (udi === null)
+      halt(400, "Invalid parameters!")
+      
+    store.SUBJECT.get(udi)
+  }
+  
+  def getSubjectAssociations(Request req) {
+    // parameter parser and validation
+    val udi = req.params("udi")
+    if (udi === null)
+      halt(400, "Invalid parameters!")
+      
+    store.SUBJECT.associations(udi)
+  }
+  
+  def subjectAddAssociation(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val udi = get("udi") as String
+    val source = get("source") as String
+    var pid = get("pid") as String
+    
+    if (udi === null || source === null || pid === null)
+      halt(400, "Invalid parameters!")
+    
+    store.SUBJECT.associate(udi, source, pid)
+  }
+  
+  def subjectRemoveAssociation(Request req) {
+    // parameter parser and validation
+    val udi = req.params("udi") as String
+    val source = req.params("source") as String
+    var pid = req.params("pid") as String
+    
+    if (udi === null || source === null || pid === null)
+      halt(400, "Invalid parameters!")
+    
+    store.SUBJECT.deAssociate(udi, source, pid)
+  }
   
   def getPage(NodeType nt, Request req) {
     // parameter parser and validation
@@ -200,29 +261,13 @@ class WebServer {
   }
   
   def dicomFind(Request req) {
-    val it = json.parse(req.body, Map)
-    
-    // parameter parser and validation
-    val query = get("query") as String
-    if (query === null)
-      halt(400, "Invalid parameters!")
-    
-    // simple query parser - <field>:<value> & ..
-    val items = newImmutableMap(query.split("&").map[
-      val keyValue = split(":")
-      if (keyValue.length !== 2)
-        halt(400, "Invalid query format!")
-      
-      keyValue.get(0).trim -> keyValue.get(1)
-    ])
-    
-    items.forEach[key, value |
-      if (!DQuery.TAGS.containsKey(key))
-        halt(400, "Non existent DICOM Tag: " + key)
-    ]
-    
-    val dQuery = new DQuery => [ set(items) ]
+    val dQuery = prepareDicomQuery(req)
     pullSrv.find(dQuery)
+  }
+  
+  def dicomPatientFind(Request req) {
+    val dQuery = prepareDicomQuery(req)
+    pullSrv.patientFind(dQuery)
   }
   
   def cypherQuery(Request req) {
@@ -277,6 +322,7 @@ class WebServer {
       ]
       
       post("/dfind", [req, res | dicomFind(req)], json)
+      post("/pfind", [req, res | dicomPatientFind(req)], json)
       post("/cypher", [req, res | cypherQuery(req)], json)
       
       path("/keys")[
@@ -299,7 +345,11 @@ class WebServer {
       
       path("/subject")[
         get("/:id", [req, res | getDetails(NodeType.SUBJECT, req)], json)
+        get("/udi/:udi", [req, res | getSubject(req)], json)
         get("/page/:page", [req, res | getPage(NodeType.SUBJECT, req)], json)
+        get("/associations/:udi", [req, res | getSubjectAssociations(req)], json)
+        post("/associate", [req, res | subjectAddAssociation(req)], json)
+        delete("/associate/:udi/:source/:pid", [req, res | subjectRemoveAssociation(req)], json)
       ]
       
       path("/pull")[
@@ -312,5 +362,36 @@ class WebServer {
         get("/page/:page", [req, res | getPage(NodeType.PUSH, req)], json)
       ]
     ]
+  }
+  
+  private def prepareDicomQuery(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val query = get("query") as String
+    if (query === null)
+      halt(400, "Invalid parameters!")
+    
+    // simple query parser - <field>:<value> & ..
+    val items = newImmutableMap(query.split("&").map[
+      val keyValue = split(":")
+      if (keyValue.length !== 2)
+        halt(400, "Invalid query format!")
+      
+      keyValue.get(0).trim -> keyValue.get(1)
+    ])
+    
+    val parsedItems = new HashMap<String, String>
+    items.forEach[key, value |
+      if (!DQuery.TAGS.containsKey(key))
+        if (tagConverter.containsKey(key.toLowerCase))
+          parsedItems.put(tagConverter.get(key.toLowerCase), value)
+        else
+          halt(400, "Non existent DICOM Tag: " + key)
+      else
+        parsedItems.put(key, value)
+    ]
+    
+    return new DQuery => [ set(parsedItems) ]
   }
 }
