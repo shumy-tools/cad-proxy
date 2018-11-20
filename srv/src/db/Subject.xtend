@@ -43,21 +43,27 @@ class Subject {
         n.«ACTIVE» as «ACTIVE»,
         n.«A_TIME» as «A_TIME»,
         n.«SEX» as «SEX»,
-        n.«BIRTHDAY» as «BIRTHDAY»
+        n.«BIRTHDAY» as «BIRTHDAY»,
+        
+        [(n)-[:GIVE]->(c:«Consent.NODE») | c {
+          id: id(c),
+          .«Consent.ACTIVE»,
+          .«Consent.A_TIME»,
+          .«Consent.PURPOSE»,
+          .«Consent.TARGETS»,
+          .«Consent.MODALITIES»
+        }] as consents,
+        
+        [(n)-[:IS]->(p:«Patient.NODE»)-[:FROM]->(s:«Source.NODE») WHERE p.«Patient.REMOVED» = false | {
+          source: s.«Source.AET»,
+          pid: p.«Patient.PID»
+        }] as associations
     ''', map)
     
     if (res.empty)
       throw new RuntimeException('''Unable to get subject: «udi»''')
     
     res.head
-  }
-  
-  def void is(Long subjectID, Long patientID) {
-    db.cypher('''
-      MATCH (n:«NODE»), (p:«Patient.NODE»)
-        WHERE id(n) = «subjectID» AND id(p) = «patientID»
-      MERGE (n)-[:IS]->(p)
-    ''')
   }
   
   def associate(String udi, String source, String pid) {
@@ -104,14 +110,6 @@ class Subject {
     ''', map)
     
     return res.toList
-  }
-  
-  def void consent(Long subjectID, Long targetID) {
-    db.cypher('''
-      MATCH (n:«NODE»), (t:«Target.NODE»)
-        WHERE id(n) = «subjectID» AND id(t) = «targetID»
-      MERGE (n)-[:CONSENT]->(t)
-    ''')
   }
   
   def from(Long sourceID, String patientID) {

@@ -34,10 +34,23 @@
 
     <v-card class="mb-2">
       <v-card-title class="title">
+        Consents
+      </v-card-title>
+      
+      <v-data-table hide-actions :headers="cHeaders" :items="selected.consents">
+        <v-progress-linear slot="progress" indeterminate></v-progress-linear>
+        <template slot="items" slot-scope="props">
+          <td v-for="h in cHeaders" :key="h.value">{{ props.item[h.value] }}</td>
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <v-card class="mb-2">
+      <v-card-title class="title">
         Associations
       </v-card-title>
       
-      <v-data-table hide-actions :headers="headers" :items="associations">
+      <v-data-table hide-actions :headers="headers" :items="selected.associations">
         <v-progress-linear slot="progress" indeterminate></v-progress-linear>
         <template slot="items" slot-scope="props">
           <td>{{ props.item.source }}</td>
@@ -83,7 +96,7 @@ import axios from 'axios';
 
 @Component
 export default class SubjectList extends Vue {
-  selected = { id: 0, udi: '', active: false, aTime: '', sex: '', birthday: '' }
+  selected = { id: 0, udi: '', active: false, aTime: '', sex: '', birthday: '', consents: [], associations: [] }
 
   inError = false
   error = ''
@@ -93,6 +106,14 @@ export default class SubjectList extends Vue {
   query = ''
   queryError = ''
   queryResults = []
+
+  cHeaders = [
+    { text: 'Purpose', sortable: false, value: 'purpose' },
+    { text: 'Targets', sortable: false, value: 'targets' },
+    { text: 'Modalities', sortable: false, value: 'modalities' },
+    { text: 'Active', sortable: false, value: 'active' },
+    { text: 'Active-Since', sortable: false, value: 'aTime' }
+  ]
 
   sHeaders = [
     { text: 'Source', sortable: false, value: 'source' },
@@ -109,24 +130,10 @@ export default class SubjectList extends Vue {
     { text: 'Remove', sortable: false, value: 'remove' }
   ]
 
-  associations: any = []
-
   beforeCreate() {
-    this.onLoading = true
     axios.get(`/api/subject/udi/${this.$route.query.udi}`)
       .then(res => {
         this.selected = res.data
-        this.onLoading = false
-      }).catch(e => {
-        this.error = e.message
-        this.inError = true
-      })
-
-    this.onLoading = true
-    axios.get(`/api/subject/associations/${this.$route.query.udi}`)
-      .then(res => {
-        this.associations = res.data
-        this.onLoading = false
       }).catch(e => {
         this.error = e.message
         this.inError = true
@@ -153,34 +160,26 @@ export default class SubjectList extends Vue {
   }
 
   associate(patient: any) {
-    this.onLoading = true
     axios.post(`/api/subject/associate`, { "udi": this.selected.udi, "source": patient.source, "pid": patient.pid })
       .then(res => {
         patient.contains = true
-        this.associations.push({ "source": patient.source, "pid": patient.pid })
-
-        this.onLoading = false
+        this.selected.associations.push({ "source": patient.source, "pid": patient.pid })
       }).catch(e => {
-        this.onLoading = false
         this.error = e.message
         this.inError = true
       })
   }
 
   deAssociate(patient: any) {
-    this.onLoading = true
     axios.delete(`/api/subject/associate/${this.selected.udi}/${patient.source}/${patient.pid}`)
       .then(res => {
         this.queryResults
           .filter(it => it.source == patient.source && it.pid == patient.pid)
           .forEach(it => it.contains = false)
 
-        let index = this.associations.indexOf(patient)
-        this.$delete(this.associations, index)
-
-        this.onLoading = false
+        let index = this.selected.associations.indexOf(patient)
+        this.$delete(this.selected.associations, index)
       }).catch(e => {
-        this.onLoading = false
         this.error = e.message
         this.inError = true
       })
@@ -201,7 +200,7 @@ export default class SubjectList extends Vue {
   }
 
   private contains(source: string, pid: string) {
-    return this.associations
+    return this.selected.associations
       .filter(it => it.source == source && it.pid == pid)
       .length !== 0
   }

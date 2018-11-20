@@ -163,6 +163,22 @@ class Target {
   }
   
   private def pendingMatch(Series.Status status, Long targetID) '''
+    MATCH (u:«Subject.NODE»)-[:GIVE]->(c:«Consent.NODE»)
+      WHERE c.«Consent.ACTIVE» = true AND c.«Consent.PURPOSE» = "auto pre-diagnosis"
+    MATCH (n:«NODE»)
+      WHERE «IF targetID !== null»id(n) = «targetID» AND«ENDIF»
+        n.«ACTIVE» = true AND n.«REMOVED» = false
+        AND (c.«Consent.TARGETS» = "all" OR n.«UDI» IN c.«Consent.TARGETS»)
+    MATCH (u)-[:HAS]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
+      WHERE u.«Subject.ACTIVE» = true
+        AND e.«Series.ELIGIBLE» = true AND e.size > 0 «IF status !== null»AND e.«Series.STATUS» = "«status.name»"«ENDIF»
+        AND e.«Series.MODALITY» IN n.«MODALITIES»
+        AND (c.«Consent.MODALITIES» = "all" OR e.«Series.MODALITY» IN c.«Consent.MODALITIES»)
+    MATCH (e) WHERE NOT (e)<-[:THESE]-(:«Push.NODE»)-[:TO]->(n) 
+      «IF status !== null»OR (e)<-[:THESE]-(:«Push.NODE» {status:"«Push.Status.RETRY.name»"})-[:TO]->(n)«ENDIF» 
+  '''
+  
+  /*private def pendingMatch(Series.Status status, Long targetID) '''
     MATCH (n:«NODE»)<-[:CONSENT]-(u:«Subject.NODE»)-[:HAS]->(s:«Study.NODE»)-[:HAS]->(e:«Series.NODE»)
       WHERE «IF targetID !== null»id(n) = «targetID» AND«ENDIF»
         u.«Subject.ACTIVE» = true AND n.«ACTIVE» = true AND n.«REMOVED» = false
@@ -170,5 +186,5 @@ class Target {
         AND e.«Series.MODALITY» IN n.«MODALITIES»
     MATCH (e) WHERE NOT (e)<-[:THESE]-(:«Push.NODE»)-[:TO]->(n) 
       «IF status !== null»OR (e)<-[:THESE]-(:«Push.NODE» {status:"«Push.Status.RETRY.name»"})-[:TO]->(n)«ENDIF» 
-  '''
+  '''*/
 }

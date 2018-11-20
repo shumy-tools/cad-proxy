@@ -3,11 +3,7 @@ import base.Server
 import db.Pull
 import db.Store
 import db.mng.Key
-import dicom.DLocal
-import dicom.model.DImage
-import dicom.model.DPatient
 import dicom.model.DQuery
-import dicom.model.DSeries
 import dicom.model.DStudy
 import java.io.File
 import java.security.Policy
@@ -23,7 +19,6 @@ import service.PushService
 import service.TransmitService
 
 import static java.security.Policy.*
-import java.time.LocalDate
 
 @Command(
   name = "cadp", footer = "Copyright(c) 2017",
@@ -139,44 +134,6 @@ class CadProxyCLI {
     ]
   }
   
-  static def void setupSubject() {
-    val store = Store.setup
-    
-    store.cypher("MATCH (n:Patient) DETACH DELETE n")
-    store.cypher("MATCH (n:Subject) DETACH DELETE n")
-    
-    val sourceID = store.SOURCE.idFromAET("DICOOGLE-STORAGE")
-    val subjectID = store.SUBJECT.create(UUID.randomUUID.toString, "M", LocalDate.of(1981, 1, 28))
-    
-    //consent all targets
-    store.TARGET.all.forEach[
-      store.SUBJECT.consent(subjectID, get("id") as Long)
-    ]
-    
-    val dSrv = new DLocal("MICAEL", "192.168.21.250", 1104, null)
-    val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
-    
-    con.find(new DQuery, DPatient.ID).forEach[
-      val patientID = store.PATIENT.create(sourceID, get(DPatient.ID))
-      store.SUBJECT.is(subjectID, patientID)
-    ]
-    
-    con.close
-    
-    println("Subjects: ")
-    store.cypher("MATCH (n:Subject) RETURN id(n) as id, [(n)-[:IS]->(p:Patient) | p { .pid, .sex, .birthday }] as is").forEach[
-      println(it)
-    ]
-  }
-  
-  static def void testFind() {
-    val store = Store.setup
-    val pullSrv = new PullService(store)
-    
-    val query = new DQuery => [set(DStudy.DATE, "20170130")]
-    println(pullSrv.find(query))
-  }
-  
   static def void testPush() {
     val store = Store.setup
     
@@ -259,34 +216,6 @@ class CadProxyCLI {
     println("Pulls: ")
     store.cypher("MATCH (n:Pull)-[:FROM]->(l) RETURN id(n), n.type, n.status, n.pullTries, id(l)").forEach[
       println(it)
-    ]
-  }
-  
-  static def void testDicom() {
-    val port = 1104
-    
-    val dSrv = new DLocal("MICAEL", "192.168.21.250", port) [
-      println('''STORE: «get(DStudy.UID)» - «get(DSeries.UID)» - «get(DImage.NUMBER)» - «get(DSeries.MODALITY)»''')
-    ]
-    
-    val con = dSrv.connect("DICOOGLE-STORAGE", "192.168.21.250", 1045)
-    
-    val query = new DQuery(DStudy.RL) => [
-      set(DSeries.MODALITY, "XC")
-    ]
-    
-    val result = con.find(query, DPatient.ID, DStudy.UID, DSeries.UID, DStudy.SERIES_COUNT)
-    println("RESULTS: " + result.length)
-    /*result.forEach[
-      println(it)
-    ]*/
-    
-    /*con.pull("1.2.826.0.1.3680043.2.1174.4.1.5.2376753")[
-      println('''STATUS: «status»''')
-    ]*/
-    
-    con.pull("1.2.826.0.1.3680043.2.1174.4.1.5.2376752", "1.2.392.200046.100.3.8.103441.9122.20170130144904.2")[
-      println('''STATUS: «status»''')
     ]
   }
 }

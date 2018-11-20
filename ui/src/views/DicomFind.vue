@@ -6,7 +6,7 @@
 
     <v-card class="elevation-1">
       <v-card-title class="title">
-        <span class="mr-5">DICOM Find</span>
+        <span class="mr-5">DICOM</span>
         <v-textarea auto-grow autofocus clearable clear-icon="fas fa-times" rows="1" label="Find"
           v-model="query" :error-messages="queryError" @keydown.tab="tab($event)" @keydown.shift.enter.exact.prevent @keyup.shift.enter="find"></v-textarea>
         <v-tooltip bottom>

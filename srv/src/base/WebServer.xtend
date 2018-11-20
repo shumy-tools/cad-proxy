@@ -53,15 +53,6 @@ class WebServer {
     store.SUBJECT.get(udi)
   }
   
-  def getSubjectAssociations(Request req) {
-    // parameter parser and validation
-    val udi = req.params("udi")
-    if (udi === null)
-      halt(400, "Invalid parameters!")
-      
-    store.SUBJECT.associations(udi)
-  }
-  
   def subjectAddAssociation(Request req) {
     val it = json.parse(req.body, Map)
     
@@ -347,7 +338,6 @@ class WebServer {
         get("/:id", [req, res | getDetails(NodeType.SUBJECT, req)], json)
         get("/udi/:udi", [req, res | getSubject(req)], json)
         get("/page/:page", [req, res | getPage(NodeType.SUBJECT, req)], json)
-        get("/associations/:udi", [req, res | getSubjectAssociations(req)], json)
         post("/associate", [req, res | subjectAddAssociation(req)], json)
         delete("/associate/:udi/:source/:pid", [req, res | subjectRemoveAssociation(req)], json)
       ]
