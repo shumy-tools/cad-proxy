@@ -96,7 +96,7 @@
               <v-icon small color="primary">fas fa-plus</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <a @click="newEdge('Source')">New</a>
+              <a @click="addEdge('Source')">Add</a>
             </v-list-tile-content>
           </v-list-tile>
 
@@ -122,7 +122,7 @@
               <v-icon small color="primary">fas fa-plus</v-icon>
             </v-list-tile-action>
             <v-list-tile-content>
-              <a @click="newEdge('Target')">New</a>
+              <a @click="addEdge('Target')">Add</a>
             </v-list-tile-content>
           </v-list-tile>
 
@@ -328,7 +328,7 @@ export default class App extends Vue {
     this.inError = false
   }
 
-  newEdge(edge: string) {
+  addEdge(edge: string) {
     this.original = null
     
     this.selected = { create: true, edge: edge, active: true, aTime: null, modalities: [] }

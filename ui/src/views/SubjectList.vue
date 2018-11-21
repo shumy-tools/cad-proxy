@@ -43,6 +43,51 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="addDialog">
+      <v-card>
+        <v-card-title class="headline grey lighten-2" primary-title>
+          <span class="font-weight-bold">Add Subject</span>
+        </v-card-title>
+
+        <v-form ref="form" v-model="validForm">
+          <v-container fluid grid-list-md>
+            <v-layout row wrap>
+              <!--ID/UDI-->
+              <v-flex xs12 sm1>
+                <v-text-field disabled v-model="selected.id" label="ID"></v-text-field>
+              </v-flex>
+              <v-flex xs12 sm11>
+                <v-text-field v-model="selected.udi" label="UDI"
+                  :rules="rules.udi"></v-text-field>
+              </v-flex>
+
+              <!--Sex/Birthday-->
+              <v-flex xs12 md4>
+                <v-select :items="sexList" item-value="name" item-text="desc" v-model="selected.sex" label="Sex"
+                  :rules="rules.sex">
+                  <template slot="selection" slot-scope="{ item, index }">
+                    <span>{{ item.name }}</span>
+                  </template>
+                </v-select>
+              </v-flex>
+              <v-flex xs12 md8>
+                <v-menu full-width v-model="dpMenu" :close-on-content-click="false" transition="scale-transition" min-width="290px">
+                  <v-text-field readonly slot="activator" v-model="selected.birthday" label="Birthday"
+                    :rules="rules.birthday"></v-text-field>
+                  <v-date-picker v-model="selected.birthday" no-title @input="dpMenu = false"></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </v-layout>
+
+            <v-toolbar flat dense color="white">
+              <v-spacer></v-spacer>
+              <v-btn :disabled="!validForm" color="primary" @click="submit">submit</v-btn>
+            </v-toolbar>
+          </v-container>
+        </v-form>
+      </v-card>
+    </v-dialog>
+
     <v-alert :value="inError" type="error">
       {{error}}
     </v-alert>
@@ -51,6 +96,7 @@
       <v-card-title class="title">
         Subject List
         <v-spacer></v-spacer>
+        <v-btn color="primary" @click="addSubject">add</v-btn>
       </v-card-title>
       
       <v-data-table :total-items="pagination.totalItems" :pagination.sync="pagination" :headers="headers" :items="items" :loading="onLoading" class="elevation-1">
@@ -79,7 +125,30 @@ export default class SubjectList extends Vue {
   error = ''
 
   onLoading = true
+
   viewDialog = false
+  addDialog = false
+  dpMenu = false
+
+  sexList = [
+    { name: 'M', desc: 'Male' },
+    { name: 'F', desc: 'Female' },
+    { name: 'O', desc: 'Other' }
+  ]
+
+  validForm = false
+  rules = {
+    udi: [
+      v => !!v || 'Required field'
+      //TODO: validate with CRC!
+    ],
+    sex: [
+      v => !!v || 'Required selection'
+    ],
+    birthday: [
+      v => !!v || 'Required field'
+    ]
+  }
 
   pagination = {
     page: 1,
@@ -113,7 +182,7 @@ export default class SubjectList extends Vue {
   ]
 
   items = []
-  selected = {}
+  selected: any = {}
 
   @Watch('pagination')
   onPaginationChanged() {
@@ -143,6 +212,26 @@ export default class SubjectList extends Vue {
         this.error = e.message
         this.inError = true
       })
+  }
+
+  addSubject() {
+    this.selected = { udi: null, sex: '', birthday: '' }
+    
+    this.addDialog = true
+    this.inError = false
+  }
+
+  submit() {
+    if ((this.$refs.form as HTMLFormElement).validate())
+      axios.post(`/api/subject`, this.selected)
+        .then(res => {
+          this.onPaginationChanged()
+          this.addDialog = false
+        }).catch(e => {
+          this.addDialog = false
+          this.error = e.message
+          this.inError = true
+        })
   }
 }
 </script>

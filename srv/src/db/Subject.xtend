@@ -17,9 +17,9 @@ class Subject {
   public static val SEX               = "sex"
   public static val BIRTHDAY          = "birthday"
   
-  def Long create(String udi, String sex, LocalDate birthday) {
-    val map = #{ UDI -> udi, A_TIME -> LocalDateTime.now}
-    val res = db.cypher('''
+  def create(String udi, String sex, LocalDate birthday) {
+    val map = #{ UDI -> udi, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
+    db.cypher('''
       MERGE (n:«NODE» {«UDI»: $«UDI»})
         ON CREATE SET
           n.«ACTIVE» = true,
@@ -27,10 +27,8 @@ class Subject {
           n.«UDI» = $«UDI»,
           n.«SEX» = $«SEX»,
           n.«BIRTHDAY» = $«BIRTHDAY»
-      RETURN id(n) as id
-    ''', map)
-    
-    res.head.get("id") as Long
+      RETURN id(n) as id, n.«A_TIME» as «A_TIME»
+    ''', map).head
   }
   
   def get(String udi) {

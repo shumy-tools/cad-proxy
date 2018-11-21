@@ -12,6 +12,8 @@ import spark.Request
 
 import static spark.Spark.*
 import java.util.HashMap
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 
 class WebServer {
   static val logger = LoggerFactory.getLogger(WebServer)
@@ -51,6 +53,27 @@ class WebServer {
       halt(400, "Invalid parameters!")
       
     store.SUBJECT.get(udi)
+  }
+  
+  def addSubject(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val udi = get("udi") as String
+    val sex = get("sex") as String
+    var rawBirthday = get("birthday") as String
+    
+    if (udi === null || sex === null || rawBirthday === null)
+      halt(400, "Invalid parameters!")
+    
+    val birthday = try {
+      LocalDate.parse(rawBirthday)
+    } catch (DateTimeParseException e) {
+      halt(400, "Invalid parameters!")
+      return null
+    }
+    
+    store.SUBJECT.create(udi, sex, birthday)
   }
   
   def subjectAddAssociation(Request req) {
@@ -338,6 +361,7 @@ class WebServer {
         get("/:id", [req, res | getDetails(NodeType.SUBJECT, req)], json)
         get("/udi/:udi", [req, res | getSubject(req)], json)
         get("/page/:page", [req, res | getPage(NodeType.SUBJECT, req)], json)
+        post("", [req, res | addSubject(req)], json)
         post("/associate", [req, res | subjectAddAssociation(req)], json)
         delete("/associate/:udi/:source/:pid", [req, res | subjectRemoveAssociation(req)], json)
       ]

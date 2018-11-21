@@ -16,7 +16,7 @@
 
         <!--ACTIVE-->
         <v-flex xs12 sm4>
-          <v-switch disabled v-model="selected.active" label="Active"></v-switch>
+          <v-switch readonly v-model="selected.active" label="Active"></v-switch>
         </v-flex>
         <v-flex xs12 sm8>
           <v-text-field v-if="selected.active" disabled v-model="selected.aTime" label="Active-Since"></v-text-field>
@@ -66,7 +66,7 @@
 
     <v-card>
       <v-card-title class="title">
-        <v-textarea auto-grow autofocus clearable clear-icon="fas fa-times" rows="1" label="Find"
+        <v-textarea auto-grow clearable clear-icon="fas fa-times" rows="1" label="Find"
           v-model="query" :error-messages="queryError" @keydown.tab="tab($event)" @keydown.shift.enter.exact.prevent @keyup.shift.enter="find"></v-textarea>
         <v-tooltip bottom>
           <v-btn slot="activator" color="primary" @click="find">go</v-btn>
