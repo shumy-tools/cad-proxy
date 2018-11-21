@@ -16,7 +16,7 @@
 
         <!--ACTIVE-->
         <v-flex xs12 sm4>
-          <v-switch readonly v-model="selected.active" label="Active"></v-switch>
+          <v-switch v-model="selected.active" label="Active" @change="activation"></v-switch>
         </v-flex>
         <v-flex xs12 sm8>
           <v-text-field v-if="selected.active" disabled v-model="selected.aTime" label="Active-Since"></v-text-field>
@@ -179,6 +179,16 @@ export default class SubjectList extends Vue {
 
         let index = this.selected.associations.indexOf(patient)
         this.$delete(this.selected.associations, index)
+      }).catch(e => {
+        this.error = e.message
+        this.inError = true
+      })
+  }
+
+  activation() {
+    axios.post(`/api/subject/activation`, { "id": this.selected.id, "active": this.selected.active })
+      .then(res => {
+        this.selected.aTime = res.data.aTime
       }).catch(e => {
         this.error = e.message
         this.inError = true

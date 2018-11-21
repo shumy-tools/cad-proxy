@@ -76,6 +76,20 @@ class WebServer {
     store.SUBJECT.create(udi, sex, birthday)
   }
   
+  def subjectActivation(Request req) {
+    val it = json.parse(req.body, Map)
+    
+    // parameter parser and validation
+    val active = get("active") as Boolean
+    val rawId = get("id") as Double
+    
+    if (rawId === null || active === null)
+      halt(400, "Invalid parameters!")
+    
+    val id = rawId.longValue
+    store.SUBJECT.activation(id, active)
+  }
+  
   def subjectAddAssociation(Request req) {
     val it = json.parse(req.body, Map)
     
@@ -362,6 +376,7 @@ class WebServer {
         get("/udi/:udi", [req, res | getSubject(req)], json)
         get("/page/:page", [req, res | getPage(NodeType.SUBJECT, req)], json)
         post("", [req, res | addSubject(req)], json)
+        post("/activation", [req, res | subjectActivation(req)], json)
         post("/associate", [req, res | subjectAddAssociation(req)], json)
         delete("/associate/:udi/:source/:pid", [req, res | subjectRemoveAssociation(req)], json)
       ]

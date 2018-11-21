@@ -18,7 +18,7 @@ class Subject {
   public static val BIRTHDAY          = "birthday"
   
   def create(String udi, String sex, LocalDate birthday) {
-    val map = #{ UDI -> udi, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now}
+    val map = #{ UDI -> udi, SEX -> sex, BIRTHDAY -> birthday, A_TIME -> LocalDateTime.now }
     db.cypher('''
       MERGE (n:«NODE» {«UDI»: $«UDI»})
         ON CREATE SET
@@ -29,6 +29,33 @@ class Subject {
           n.«BIRTHDAY» = $«BIRTHDAY»
       RETURN id(n) as id, n.«A_TIME» as «A_TIME»
     ''', map).head
+  }
+  
+  def activation(Long id, Boolean active) {
+    val res = db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «id»
+      RETURN n.«ACTIVE» as «ACTIVE», n.«A_TIME» as «A_TIME»
+    ''')
+    
+    if (res.empty)
+      throw new RuntimeException('''Unable to find subject: «id»''')
+    
+    // update A_TIME when activating
+    val subject = res.head
+    val aTime = if (active && !subject.get(ACTIVE) as Boolean)
+      LocalDateTime.now
+    else
+      subject.get(A_TIME) as LocalDateTime
+    
+    val map = #{ ACTIVE -> active, A_TIME -> aTime }
+    db.cypher('''
+      MATCH (n:«NODE») WHERE id(n) = «id»
+        SET
+          n.«ACTIVE» = $«ACTIVE»,
+          n.«A_TIME» = $«A_TIME»
+    ''', map)
+    
+    return # { A_TIME -> aTime }
   }
   
   def get(String udi) {
